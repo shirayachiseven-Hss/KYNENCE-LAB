@@ -1,0 +1,88 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 512 512"
+    role="img"
+    aria-labelledby="title desc"
+>
+
+    <title id="title">KYNENCE LAB</title>
+
+    <desc id="desc">
+        Símbolo geométrico em forma de cristal do KYNENCE LAB.
+    </desc>
+
+
+    <!-- ==================================================
+         KYNENCE LAB
+         Símbolo geométrico / cristal
+         ================================================== -->
+
+
+    <!-- Estrutura principal do cristal -->
+
+    <polygon
+        points="256,36 430,136 430,340 256,476 82,340 82,136"
+        fill="#0B1F33"
+    />
+
+
+    <!-- Face superior -->
+
+    <polygon
+        points="256,36 430,136 256,238 82,136"
+        fill="#123653"
+    />
+
+
+    <!-- Face esquerda -->
+
+    <polygon
+        points="82,136 256,238 256,476 82,340"
+        fill="#0F766E"
+    />
+
+
+    <!-- Face direita -->
+
+    <polygon
+        points="256,238 430,136 430,340 256,476"
+        fill="#16A34A"
+    />
+
+
+    <!-- Linha central que sugere o K -->
+
+    <polygon
+        points="238,118 274,138 274,214 238,194"
+        fill="#FFFFFF"
+        opacity="0.96"
+    />
+
+
+    <!-- Diagonal superior do K -->
+
+    <polygon
+        points="238,194 274,214 344,174 308,154"
+        fill="#FFFFFF"
+        opacity="0.96"
+    />
+
+
+    <!-- Diagonal inferior do K -->
+
+    <polygon
+        points="238,194 274,214 344,286 308,306"
+        fill="#FFFFFF"
+        opacity="0.96"
+    />
+
+
+    <!-- Pequeno eixo central -->
+    
+    <polygon
+        points="238,194 274,214 274,382 238,360"
+        fill="#FFFFFF"
+        opacity="0.90"
+    />
+
+</svg>

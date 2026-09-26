@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+    KYNENCE LAB
+    Sitemap inicial
+
+    IMPORTANTE:
+    Substituir SEU-DOMINIO-AQUI pelo domínio definitivo
+    antes da publicação.
+--><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><!-- Página inicial -->
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/</loc>
+</url>
+
+<!-- Pesquisa -->
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/pesquisa.html</loc>
+</url>
+
+<!-- Categorias -->
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/categorias/categoria.html</loc>
+</url>
+
+<!-- Artigos -->
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/artigos/o-que-e-inflacao.html</loc>
+</url>
+
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/artigos/por-que-os-precos-sobem.html</loc>
+</url>
+
+<!-- Páginas institucionais -->
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/sobre.html</loc>
+</url>
+
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/privacidade.html</loc>
+</url>
+
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/termos.html</loc>
+</url>
+
+<url>
+    <loc>https://SEU-DOMINIO-AQUI/contacto.html</loc>
+</url>
+
+</urlset>

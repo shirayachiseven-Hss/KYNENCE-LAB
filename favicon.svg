@@ -1,0 +1,56 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 512 512"
+>
+
+    <!-- Fundo -->
+    <rect
+        width="512"
+        height="512"
+        rx="96"
+        fill="#0B1F33"
+    />
+
+    <!-- Cristal -->
+    <polygon
+        points="256,55 425,153 425,359 256,457 87,359 87,153"
+        fill="#0F766E"
+    />
+
+    <!-- Face superior -->
+    <polygon
+        points="256,55 425,153 256,250 87,153"
+        fill="#123653"
+    />
+
+    <!-- Face esquerda -->
+    <polygon
+        points="87,153 256,250 256,457 87,359"
+        fill="#0F766E"
+    />
+
+    <!-- Face direita -->
+    <polygon
+        points="256,250 425,153 425,359 256,457"
+        fill="#16A34A"
+    />
+
+    <!-- Estrutura central -->
+    <polygon
+        points="238,115 274,136 274,385 238,364"
+        fill="#FFFFFF"
+    />
+
+    <!-- Diagonal superior -->
+    <polygon
+        points="238,190 274,211 350,168 314,147"
+        fill="#FFFFFF"
+    />
+
+    <!-- Diagonal inferior -->
+    <polygon
+        points="238,190 274,211 350,290 314,311"
+        fill="#FFFFFF"
+    />
+
+</svg>

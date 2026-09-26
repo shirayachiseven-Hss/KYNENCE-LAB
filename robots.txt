@@ -1,0 +1,17 @@
+=========================================================
+
+KYNENCE LAB — ROBOTS.TXT
+
+=========================================================
+
+User-agent: *
+
+Allow: /
+
+O sitemap será adicionado quando o site tiver
+
+um domínio público definitivo.
+
+Exemplo futuro:
+
+Sitemap: https://seudominio.com/sitemap.xml
