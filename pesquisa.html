@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Pesquise artigos sobre finanças, economia e educação financeira na KYNENCE LAB."
+    >
+
+    <meta
+        name="theme-color"
+        content="#0B1F33"
+    >
+
+    <title>Pesquisa — KYNENCE LAB</title>
+
+    <link
+        rel="stylesheet"
+        href="Style.css"
+    >
+
+</head>
+
+<body>
+
+
+<!-- ==================================================
+     CABEÇALHO
+================================================== -->
+
+<header class="header">
+
+    <div class="header-container">
+
+        <a
+            href="index.html"
+            class="logo"
+            aria-label="KYNENCE LAB — Página inicial"
+        >
+
+            <span class="logo-main">
+                KYNENCE
+            </span>
+
+            <span class="logo-lab">
+                LAB
+            </span>
+
+        </a>
+
+
+        <button
+            id="menuButton"
+            class="menu-button"
+            type="button"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+            aria-controls="navigation"
+        >
+            ☰
+        </button>
+
+
+        <nav
+            id="navigation"
+            class="navigation"
+            aria-label="Navegação principal"
+        >
+
+            <a href="pesquisa.html">
+                🔎 Pesquisa
+            </a>
+
+            <a href="index.html">
+                Início
+            </a>
+
+            <a href="categorias/categoria.html?categoria=financas">
+                Finanças
+            </a>
+
+            <a href="categorias/categoria.html?categoria=economia">
+                Economia
+            </a>
+
+            <a href="categorias/categoria.html?categoria=investimentos">
+                Investimentos
+            </a>
+
+            <a href="categorias/categoria.html?categoria=educacao">
+                Educação
+            </a>
+
+            <a href="index.html#sobre">
+                Sobre
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<!-- ==================================================
+     PESQUISA
+================================================== -->
+
+<main class="search-page">
+
+
+    <section class="search-header">
+
+        <div class="container">
+
+            <span class="article-category">
+                KYNENCE LAB
+            </span>
+
+
+            <h1>
+                Pesquisar artigos
+            </h1>
+
+
+            <p>
+                Encontre conteúdos sobre dinheiro,
+                economia e educação financeira.
+            </p>
+
+
+            <!-- FORMULÁRIO -->
+
+            <form
+                id="searchForm"
+                class="search-form"
+                role="search"
+            >
+
+                <label
+                    for="searchInput"
+                    class="sr-only"
+                >
+                    Pesquisar artigos
+                </label>
+
+
+                <input
+                    type="search"
+                    id="searchInput"
+                    name="q"
+                    placeholder="Ex.: inflação, poupança, economia..."
+                    autocomplete="off"
+                    aria-label="Pesquisar artigos"
+                >
+
+
+                <button
+                    type="submit"
+                    class="search-button"
+                >
+                    🔎 Pesquisar
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         RESULTADOS
+    ================================================== -->
+
+    <section class="section">
+
+        <div class="container">
+
+            <div
+                id="searchInfo"
+                class="search-info"
+                aria-live="polite"
+            >
+                Pesquise por um tema para começar.
+            </div>
+
+
+            <div
+                id="searchResults"
+                class="articles-grid"
+            >
+
+                <!-- Resultados inseridos pelo pesquisa.js -->
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+<!-- ==================================================
+     RODAPÉ
+================================================== -->
+
+<footer class="site-footer">
+
+    <div class="container">
+
+        <div class="footer-main">
+
+            <div>
+
+                <div class="logo footer-logo">
+
+                    <span class="logo-main">
+                        KYNENCE
+                    </span>
+
+                    <span class="logo-lab">
+                        LAB
+                    </span>
+
+                </div>
+
+
+                <p>
+                    Entenda o dinheiro.
+                    Entenda a economia.
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="index.html">
+                    Início
+                </a>
+
+                <a href="categorias/categoria.html?categoria=financas">
+                    Finanças
+                </a>
+
+                <a href="categorias/categoria.html?categoria=economia">
+                    Economia
+                </a>
+
+                <a href="categorias/categoria.html?categoria=investimentos">
+                    Investimentos
+                </a>
+
+                <a href="categorias/categoria.html?categoria=educacao">
+                    Educação Financeira
+                </a>
+
+                <a href="categorias/categoria.html?categoria=trabalho">
+                    Trabalho &amp; Renda
+                </a>
+
+                <a href="index.html#sobre">
+                    Sobre
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+
+            © <span id="currentYear"></span> KYNENCE LAB.
+
+        </div>
+
+    </div>
+
+</footer>
+
+
+<!-- ==================================================
+     JAVASCRIPT
+================================================== -->
+
+<script src="dados/artigos.js"></script>
+
+<script src="script.js"></script>
+
+<script src="dados/pesquisa.js"></script>
+
+
+</body>
+</html>
