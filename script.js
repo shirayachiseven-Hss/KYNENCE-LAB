@@ -1,7 +1,7 @@
 // ============================================================
 // KYNENCE LAB
 // SCRIPT PRINCIPAL
-// V1.9 — LIMPEZA + ESTABILIDADE + KYNENCE DATA
+// V2.0 — INICIALIZAÇÃO ROBUSTA + KYNENCE DATA
 // ============================================================
 //
 // Responsabilidades:
@@ -22,7 +22,7 @@
 // 14. Seletor de indicadores
 // 15. Comparação de indicadores
 // 16. Funções globais
-// 17. Inicialização
+// 17. Inicialização robusta
 // 18. Atualização após API
 // 19. Inicialização da API
 //
@@ -45,6 +45,15 @@ function inicializarMenuMobile() {
     if (!menuButton || !navigation) {
         return;
     }
+
+
+    // Evita registrar os mesmos eventos mais de uma vez
+    if (menuButton.dataset.kynenceMenuInicializado === "true") {
+        return;
+    }
+
+
+    menuButton.dataset.kynenceMenuInicializado = "true";
 
 
     function fecharMenu() {
@@ -227,20 +236,6 @@ function escaparHTML(valor) {
 // ============================================================
 // 4. CONSTRUIR URL DO ARTIGO
 // ============================================================
-//
-// O catálogo utiliza:
-//
-// artigos/o-que-e-inflacao.html
-//
-// Na Home:
-//
-// artigos/o-que-e-inflacao.html?id=inflacao
-//
-// Dentro de /artigos/:
-//
-// o-que-e-inflacao.html?id=inflacao
-//
-// ============================================================
 
 function construirUrlArtigo(
     artigo,
@@ -270,10 +265,7 @@ function construirUrlArtigo(
     }
 
 
-    // --------------------------------------------------------
     // URLs externas ou absolutas
-    // --------------------------------------------------------
-
     if (
         /^https?:\/\//i.test(caminho) ||
         caminho.startsWith("//")
@@ -285,10 +277,7 @@ function construirUrlArtigo(
     }
 
 
-    // --------------------------------------------------------
     // Normalizar barras iniciais
-    // --------------------------------------------------------
-
     caminho =
         caminho.replace(
             /^\.?\//,
@@ -296,10 +285,7 @@ function construirUrlArtigo(
         );
 
 
-    // --------------------------------------------------------
     // Remover "artigos/" quando necessário
-    // --------------------------------------------------------
-
     if (
         caminho.startsWith("artigos/")
     ) {
@@ -311,10 +297,7 @@ function construirUrlArtigo(
     }
 
 
-    // --------------------------------------------------------
     // Página dentro da pasta /artigos/
-    // --------------------------------------------------------
-
     if (contexto === "artigo") {
 
         return caminho.includes("?")
@@ -323,10 +306,7 @@ function construirUrlArtigo(
     }
 
 
-    // --------------------------------------------------------
     // Home, pesquisa ou categorias
-    // --------------------------------------------------------
-
     return caminho.includes("?")
         ? `artigos/${caminho}&id=${id}`
         : `artigos/${caminho}?id=${id}`;
@@ -1778,6 +1758,7 @@ function alternarInformacoes(
             criarInformacoesIndicador(
                 indicador
             );
+
     } else {
 
         container.innerHTML = "";
@@ -2043,19 +2024,11 @@ function inicializarComparacaoIndicadores() {
     }
 
 
-    preencherSelect(
-        selectA
-    );
+    preencherSelect(selectA);
+    preencherSelect(selectB);
 
 
-    preencherSelect(
-        selectB
-    );
-
-
-    function encontrarIndicador(
-        id
-    ) {
+    function encontrarIndicador(id) {
 
         return indicadores.find(
             indicador =>
@@ -2133,7 +2106,6 @@ function inicializarComparacaoIndicadores() {
 
         const unidadeHTML =
             unidade
-
                 ? `
 
                     <span
@@ -2147,7 +2119,6 @@ function inicializarComparacaoIndicadores() {
                     </span>
 
                 `
-
                 : "";
 
 
@@ -2276,15 +2247,11 @@ function inicializarComparacaoIndicadores() {
 
 
         const indicadorA =
-            encontrarIndicador(
-                idA
-            );
+            encontrarIndicador(idA);
 
 
         const indicadorB =
-            encontrarIndicador(
-                idB
-            );
+            encontrarIndicador(idB);
 
 
         if (
@@ -2348,15 +2315,11 @@ function inicializarComparacaoIndicadores() {
 
 
         const mapaA =
-            criarMapaHistorico(
-                historicoA
-            );
+            criarMapaHistorico(historicoA);
 
 
         const mapaB =
-            criarMapaHistorico(
-                historicoB
-            );
+            criarMapaHistorico(historicoB);
 
 
         const periodos =
@@ -2366,17 +2329,13 @@ function inicializarComparacaoIndicadores() {
 
                 .filter(
                     periodo =>
-                        mapaB.has(
-                            periodo
-                        )
+                        mapaB.has(periodo)
                 )
 
                 .sort(
                     function (a, b) {
 
-                        return String(
-                            a
-                        ).localeCompare(
+                        return String(a).localeCompare(
                             String(b),
                             undefined,
                             {
@@ -2433,15 +2392,11 @@ function inicializarComparacaoIndicadores() {
             periodo => {
 
                 const valorA =
-                    mapaA.get(
-                        periodo
-                    );
+                    mapaA.get(periodo);
 
 
                 const valorB =
-                    mapaB.get(
-                        periodo
-                    );
+                    mapaB.get(periodo);
 
 
                 linhas += `
@@ -2451,9 +2406,7 @@ function inicializarComparacaoIndicadores() {
                         <td>
 
                             ${escaparHTML(
-                                String(
-                                    periodo
-                                )
+                                String(periodo)
                             )}
 
                         </td>
@@ -2602,33 +2555,123 @@ window.inicializarComparacaoIndicadores =
 
 
 // ============================================================
-// 20. INICIALIZAÇÃO DA PÁGINA
+// 20. INICIALIZAÇÃO PRINCIPAL
+// ============================================================
+//
+// Em vez de depender exclusivamente de um único
+// DOMContentLoaded, usamos uma função central.
+//
+// Isto funciona tanto quando o script é carregado
+// antes do DOM terminar quanto quando ele é carregado
+// depois do DOM já estar pronto.
 // ============================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+let KYNENCE_PAGINA_INICIALIZADA = false;
 
-        inicializarMenuMobile();
 
-        atualizarAnoFooter();
+function inicializarPaginaKynence() {
 
-        carregarArtigoDestaque();
-
-        carregarArtigosRecentes();
-
-        renderizarKynenceData();
-
-        inicializarSeletorIndicadores();
-
-        inicializarComparacaoIndicadores();
-
+    // Impede inicialização duplicada
+    if (KYNENCE_PAGINA_INICIALIZADA) {
+        return;
     }
-);
+
+
+    KYNENCE_PAGINA_INICIALIZADA = true;
+
+
+    console.log(
+        "[KYNENCE] Inicializando página..."
+    );
+
+
+    // --------------------------------------------------------
+    // Interface principal
+    // --------------------------------------------------------
+
+    inicializarMenuMobile();
+
+    atualizarAnoFooter();
+
+    carregarArtigoDestaque();
+
+    carregarArtigosRecentes();
+
+
+    // --------------------------------------------------------
+    // KYNENCE DATA
+    // --------------------------------------------------------
+
+    renderizarKynenceData();
+
+    inicializarSeletorIndicadores();
+
+    inicializarComparacaoIndicadores();
+
+
+    console.log(
+        "[KYNENCE] Interface inicializada."
+    );
+
+
+    // --------------------------------------------------------
+    // API
+    // --------------------------------------------------------
+
+    if (
+        typeof window.atualizarKynenceData ===
+        "function"
+    ) {
+
+        console.log(
+            "[KYNENCE] Iniciando atualização da API..."
+        );
+
+
+        window.atualizarKynenceData();
+
+    } else {
+
+        console.warn(
+            "[KYNENCE] atualizarKynenceData() ainda não disponível."
+        );
+    }
+}
 
 
 // ============================================================
-// 21. ATUALIZAÇÃO APÓS A API
+// 21. INICIALIZAÇÃO ROBUSTA
+// ============================================================
+//
+// Se o DOM ainda estiver carregando:
+//     espera DOMContentLoaded.
+//
+// Se o DOM já estiver pronto:
+//     inicializa imediatamente.
+//
+// ============================================================
+
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        inicializarPaginaKynence,
+        {
+            once: true
+        }
+    );
+
+} else {
+
+    inicializarPaginaKynence();
+}
+
+
+// ============================================================
+// 22. ATUALIZAÇÃO APÓS A API
 // ============================================================
 
 document.addEventListener(
@@ -2645,32 +2688,6 @@ document.addEventListener(
         inicializarSeletorIndicadores();
 
         inicializarComparacaoIndicadores();
-
-    }
-);
-
-
-// ============================================================
-// 22. INICIALIZAÇÃO DA API
-// ============================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        if (
-            typeof window.atualizarKynenceData ===
-            "function"
-        ) {
-
-            window.atualizarKynenceData();
-
-        } else {
-
-            console.warn(
-                "[KYNENCE] atualizarKynenceData() ainda não disponível."
-            );
-        }
 
     }
 );
