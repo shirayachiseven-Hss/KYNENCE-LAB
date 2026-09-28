@@ -1,7 +1,7 @@
 // ============================================================
 // KYNENCE LAB
 // dados/artigo.js
-// V2.4 — Artigo + SEO + Breadcrumb + JSON-LD
+// V2.5 — Sistema completo de artigo
 // ============================================================
 
 
@@ -69,7 +69,10 @@ function resolverURL(url) {
 
     try {
 
-        return new URL(url, window.location.href).href;
+        return new URL(
+            url,
+            window.location.href
+        ).href;
 
     } catch (erro) {
 
@@ -115,7 +118,10 @@ function definirMetaProperty(property, content) {
 
         meta = document.createElement("meta");
 
-        meta.setAttribute("property", property);
+        meta.setAttribute(
+            "property",
+            property
+        );
 
         document.head.appendChild(meta);
 
@@ -167,9 +173,10 @@ function definirIndexacao(indexar = true) {
 
 function obterParametroID() {
 
-    const parametros = new URLSearchParams(
-        window.location.search
-    );
+    const parametros =
+        new URLSearchParams(
+            window.location.search
+        );
 
     return parametros.get(
         KYNENCE_ARTIGO_CONFIG.parametroId
@@ -180,23 +187,32 @@ function obterParametroID() {
 
 function obterNomeArquivo() {
 
-    const caminho = window.location.pathname;
+    const caminho =
+        window.location.pathname;
 
-    const partes = caminho.split("/");
+    const partes =
+        caminho.split("/");
 
-    const arquivo = partes.pop() || "";
+    const arquivo =
+        partes.pop() || "";
 
-    return arquivo
-        .replace(/\.html$/i, "");
+    return arquivo.replace(
+        /\.html$/i,
+        ""
+    );
 
 }
 
 
 function encontrarArtigo() {
 
-    const artigos = Array.isArray(window.KYNENCE_ARTIGOS)
-        ? window.KYNENCE_ARTIGOS
-        : [];
+    const artigos =
+        Array.isArray(
+            window.KYNENCE_ARTIGOS
+        )
+            ? window.KYNENCE_ARTIGOS
+            : [];
+
 
     if (!artigos.length) {
 
@@ -205,9 +221,11 @@ function encontrarArtigo() {
     }
 
 
-    const id = obterParametroID();
+    const id =
+        obterParametroID();
 
-    const nomeArquivo = obterNomeArquivo();
+    const nomeArquivo =
+        obterNomeArquivo();
 
 
     // --------------------------------------------------------
@@ -216,10 +234,14 @@ function encontrarArtigo() {
 
     if (id) {
 
-        const artigoPorID = artigos.find(
-            artigo =>
-                String(artigo.id || "") === String(id)
-        );
+        const artigoPorID =
+            artigos.find(
+                artigo =>
+                    String(
+                        artigo.id || ""
+                    ) === String(id)
+            );
+
 
         if (artigoPorID) {
 
@@ -234,12 +256,16 @@ function encontrarArtigo() {
     // 2. Procurar pelo slug
     // --------------------------------------------------------
 
-    const artigoPorSlug = artigos.find(
-        artigo =>
-            String(artigo.slug || "")
-                .toLowerCase() ===
-            nomeArquivo.toLowerCase()
-    );
+    const artigoPorSlug =
+        artigos.find(
+            artigo =>
+                String(
+                    artigo.slug || ""
+                )
+                    .toLowerCase() ===
+                nomeArquivo.toLowerCase()
+        );
+
 
     if (artigoPorSlug) {
 
@@ -249,22 +275,29 @@ function encontrarArtigo() {
 
 
     // --------------------------------------------------------
-    // 3. Procurar pelo arquivo da URL
+    // 3. Procurar pela URL
     // --------------------------------------------------------
 
-    const artigoPorURL = artigos.find(
-        artigo => {
+    const artigoPorURL =
+        artigos.find(
+            artigo => {
 
-            const url = String(
-                artigo.url || ""
-            );
+                const url =
+                    String(
+                        artigo.url || ""
+                    );
 
-            return url
-                .toLowerCase()
-                .includes(nomeArquivo.toLowerCase());
+                return (
+                    url
+                        .toLowerCase()
+                        .includes(
+                            nomeArquivo.toLowerCase()
+                        )
+                );
 
-        }
-    );
+            }
+        );
+
 
     return artigoPorURL || null;
 
@@ -279,7 +312,8 @@ function obterElemento(...ids) {
 
     for (const id of ids) {
 
-        const elemento = document.getElementById(id);
+        const elemento =
+            document.getElementById(id);
 
         if (elemento) {
 
@@ -300,81 +334,190 @@ function obterElemento(...ids) {
 
 function renderizarCabecalhoArtigo(artigo) {
 
-    const titulo = obterElemento(
-        "articleTitle",
-        "tituloArtigo",
-        "postTitle"
-    );
+    const titulo =
+        obterElemento(
+            "articleTitle",
+            "tituloArtigo",
+            "postTitle"
+        );
 
-    const resumo = obterElemento(
-        "articleSummary",
-        "resumoArtigo",
-        "postSummary"
-    );
 
-    const categoria = obterElemento(
-        "articleCategory",
-        "categoriaArtigo",
-        "postCategory"
-    );
+    const resumo =
+        obterElemento(
+            "articleLead",
+            "articleSummary",
+            "resumoArtigo",
+            "postSummary"
+        );
 
-    const autor = obterElemento(
-        "articleAuthor",
-        "autorArtigo",
-        "postAuthor"
-    );
 
-    const data = obterElemento(
-        "articleDate",
-        "dataArtigo",
-        "postDate"
-    );
+    const categoria =
+        obterElemento(
+            "articleCategory",
+            "categoriaArtigo",
+            "postCategory"
+        );
 
+
+    const autor =
+        obterElemento(
+            "articleAuthor",
+            "autorArtigo",
+            "postAuthor"
+        );
+
+
+    const data =
+        obterElemento(
+            "articleDate",
+            "dataArtigo",
+            "postDate"
+        );
+
+
+    const tempoLeitura =
+        obterElemento(
+            "articleReadingTime",
+            "tempoLeitura",
+            "readingTime"
+        );
+
+
+    const atualizado =
+        obterElemento(
+            "articleUpdated",
+            "artigoAtualizado",
+            "updatedArticle"
+        );
+
+
+    // --------------------------------------------------------
+    // Título
+    // --------------------------------------------------------
 
     if (titulo) {
 
-        titulo.textContent = textoSeguro(
-            artigo.titulo,
-            "Artigo KYNENCE LAB"
-        );
+        titulo.textContent =
+            textoSeguro(
+                artigo.titulo,
+                "Artigo KYNENCE LAB"
+            );
 
     }
 
+
+    // --------------------------------------------------------
+    // Resumo
+    // --------------------------------------------------------
 
     if (resumo) {
 
-        resumo.textContent = textoSeguro(
-            artigo.resumo
-        );
+        resumo.textContent =
+            textoSeguro(
+                artigo.resumo,
+                "Conteúdo educativo da KYNENCE LAB."
+            );
 
     }
 
+
+    // --------------------------------------------------------
+    // Categoria
+    // --------------------------------------------------------
 
     if (categoria) {
 
-        categoria.textContent = textoSeguro(
-            artigo.categoria,
-            "Economia"
-        );
+        categoria.textContent =
+            textoSeguro(
+                artigo.categoria,
+                "Economia"
+            );
 
     }
 
+
+    // --------------------------------------------------------
+    // Autor
+    // --------------------------------------------------------
 
     if (autor) {
 
-        autor.textContent = textoSeguro(
-            artigo.autor,
-            "KYNENCE LAB"
-        );
+        autor.textContent =
+            textoSeguro(
+                artigo.autor,
+                "KYNENCE LAB"
+            );
 
     }
 
 
+    // --------------------------------------------------------
+    // Data
+    // --------------------------------------------------------
+
     if (data) {
 
-        data.textContent = textoSeguro(
-            artigo.data
-        );
+        data.textContent =
+            textoSeguro(
+                artigo.data
+            );
+
+    }
+
+
+    // --------------------------------------------------------
+    // Tempo de leitura
+    // --------------------------------------------------------
+
+    if (tempoLeitura) {
+
+        const leitura =
+            artigo.tempoLeitura ||
+            artigo.tempo_leitura ||
+            artigo.leitura ||
+            artigo.readingTime;
+
+
+        if (leitura) {
+
+            tempoLeitura.textContent =
+                String(leitura).includes("min")
+                    ? String(leitura)
+                    : `${leitura} min de leitura`;
+
+        } else {
+
+            tempoLeitura.textContent =
+                "";
+
+        }
+
+    }
+
+
+    // --------------------------------------------------------
+    // Data de atualização
+    // --------------------------------------------------------
+
+    if (atualizado) {
+
+        const dataAtualizacao =
+            artigo.dataAtualizacao ||
+            artigo.data_atualizacao ||
+            artigo.dataAtualizacaoISO;
+
+
+        if (dataAtualizacao) {
+
+            atualizado.textContent =
+                `Atualizado em ${dataAtualizacao}`;
+
+        } else {
+
+            atualizado.textContent =
+                "";
+
+        }
 
     }
 
@@ -387,9 +530,11 @@ function renderizarCabecalhoArtigo(artigo) {
 
 function obterURLCategoria(artigo) {
 
-    const categoriaSlug = textoSeguro(
-        artigo.categoriaSlug
-    );
+    const categoriaSlug =
+        textoSeguro(
+            artigo.categoriaSlug
+        );
+
 
     if (!categoriaSlug) {
 
@@ -397,9 +542,14 @@ function obterURLCategoria(artigo) {
 
     }
 
-    return `../categorias/categoria.html?categoria=${encodeURIComponent(
-        categoriaSlug
-    )}`;
+
+    return (
+        "../categorias/categoria.html" +
+        "?categoria=" +
+        encodeURIComponent(
+            categoriaSlug
+        )
+    );
 
 }
 
@@ -409,34 +559,38 @@ function criarBreadcrumb(artigo) {
     if (!artigo) return;
 
 
-    // --------------------------------------------------------
-    // Procurar elemento existente
-    // --------------------------------------------------------
+    let breadcrumb =
+        obterElemento(
+            "articleBreadcrumb",
+            "breadcrumb",
+            "breadcrumbs"
+        );
 
-    let breadcrumb = obterElemento(
-        "articleBreadcrumb",
-        "breadcrumb",
-        "breadcrumbs"
-    );
-
-
-    // --------------------------------------------------------
-    // Criar automaticamente caso não exista
-    // --------------------------------------------------------
 
     if (!breadcrumb) {
 
-        const artigoMain = document.querySelector(
-            "main"
-        );
+        const artigoMain =
+            document.querySelector(
+                "main"
+            );
+
 
         if (!artigoMain) return;
 
-        breadcrumb = document.createElement("nav");
 
-        breadcrumb.id = "articleBreadcrumb";
+        breadcrumb =
+            document.createElement(
+                "nav"
+            );
 
-        breadcrumb.className = "article-breadcrumb";
+
+        breadcrumb.id =
+            "articleBreadcrumb";
+
+
+        breadcrumb.className =
+            "article-breadcrumb";
+
 
         breadcrumb.setAttribute(
             "aria-label",
@@ -444,36 +598,49 @@ function criarBreadcrumb(artigo) {
         );
 
 
-        // Colocar antes do conteúdo principal
-
-        artigoMain.prepend(breadcrumb);
+        artigoMain.prepend(
+            breadcrumb
+        );
 
     }
 
 
-    const categoria = textoSeguro(
-        artigo.categoria,
-        "Economia"
-    );
+    const categoria =
+        textoSeguro(
+            artigo.categoria,
+            "Economia"
+        );
 
 
-    const categoriaURL = obterURLCategoria(
-        artigo
-    );
+    const categoriaURL =
+        obterURLCategoria(
+            artigo
+        );
 
 
     breadcrumb.innerHTML = `
+
         <a href="../index.html">
             Início
         </a>
 
-        <span aria-hidden="true">›</span>
+        <span aria-hidden="true">
+            ›
+        </span>
 
-        <a href="${escaparHTML(categoriaURL)}">
-            ${escaparHTML(categoria)}
+        <a
+            href="${escaparHTML(
+                categoriaURL
+            )}"
+        >
+            ${escaparHTML(
+                categoria
+            )}
         </a>
 
-        <span aria-hidden="true">›</span>
+        <span aria-hidden="true">
+            ›
+        </span>
 
         <span aria-current="page">
             ${escaparHTML(
@@ -483,6 +650,7 @@ function criarBreadcrumb(artigo) {
                 )
             )}
         </span>
+
     `;
 
 }
@@ -492,33 +660,75 @@ function criarBreadcrumb(artigo) {
 // 7. CONTEÚDO DO ARTIGO
 // ============================================================
 
+function obterConteudoArtigo(artigo) {
+
+    return (
+        artigo.conteudo ||
+        artigo.conteúdo ||
+        artigo.corpo ||
+        artigo.body ||
+        artigo.content ||
+        ""
+    );
+
+}
+
+
 function renderizarConteudoArtigo(artigo) {
 
-    const conteudo = obterElemento(
-        "articleContent",
-        "conteudoArtigo",
-        "postContent"
-    );
+    const conteudo =
+        obterElemento(
+            "articleBody",
+            "articleContent",
+            "conteudoArtigo",
+            "postContent"
+        );
+
 
     if (!conteudo) return;
 
 
+    const corpo =
+        obterConteudoArtigo(
+            artigo
+        );
+
+
+    if (
+        typeof corpo ===
+        "string" &&
+        corpo.trim()
+    ) {
+
+        conteudo.innerHTML =
+            corpo;
+
+        return;
+
+    }
+
+
     // --------------------------------------------------------
-    // IMPORTANTE
-    //
-    // Se o conteúdo já estiver escrito diretamente no HTML,
-    // não o apagamos.
-    //
-    // O script apenas usa conteúdo dinâmico quando existir
-    // um campo "conteudo" no catálogo.
+    // Se não houver conteúdo no catálogo,
+    // mantemos o estado atual.
     // --------------------------------------------------------
 
     if (
-        artigo.conteudo &&
-        typeof artigo.conteudo === "string"
+        !conteudo.innerHTML.trim()
     ) {
 
-        conteudo.innerHTML = artigo.conteudo;
+        conteudo.innerHTML = `
+
+            <div class="empty-state">
+
+                <p>
+                    O conteúdo deste artigo
+                    ainda não foi disponibilizado.
+                </p>
+
+            </div>
+
+        `;
 
     }
 
@@ -531,11 +741,13 @@ function renderizarConteudoArtigo(artigo) {
 
 function renderizarAviso(artigo) {
 
-    const aviso = obterElemento(
-        "articleDisclaimer",
-        "disclaimer",
-        "avisoArtigo"
-    );
+    const aviso =
+        obterElemento(
+            "articleDisclaimer",
+            "disclaimer",
+            "avisoArtigo"
+        );
+
 
     if (!aviso) return;
 
@@ -553,75 +765,105 @@ function renderizarAviso(artigo) {
 
 function renderizarFontes(artigo) {
 
-    const fontesElemento = obterElemento(
-        "articleSources",
-        "fontesArtigo",
-        "sources"
-    );
+    const fontesLista =
+        obterElemento(
+            "articleSourcesList",
+            "fontesArtigoList",
+            "sourcesList"
+        );
 
-    if (!fontesElemento) return;
+
+    if (!fontesLista) return;
 
 
-    const fontes = Array.isArray(
-        artigo.fontes
-    )
-        ? artigo.fontes
-        : [];
+    const fontes =
+        Array.isArray(
+            artigo.fontes
+        )
+            ? artigo.fontes
+            : [];
 
 
     if (!fontes.length) {
 
-        fontesElemento.innerHTML = "";
+        fontesLista.innerHTML = `
+
+            <p>
+                Nenhuma fonte adicionada.
+            </p>
+
+        `;
 
         return;
 
     }
 
 
-    const lista = fontes
-        .map(fonte => {
+    const lista =
+        fontes
+            .map(
+                fonte => {
 
-            const nome = textoSeguro(
-                fonte.nome || fonte.titulo,
-                "Fonte"
-            );
-
-            const url = textoSeguro(
-                fonte.url
-            );
-
-
-            if (!url) {
-
-                return `
-                    <li>
-                        ${escaparHTML(nome)}
-                    </li>
-                `;
-
-            }
+                    const nome =
+                        textoSeguro(
+                            fonte.nome ||
+                            fonte.titulo,
+                            "Fonte"
+                        );
 
 
-            return `
-                <li>
-                    <a
-                        href="${escaparHTML(url)}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        ${escaparHTML(nome)}
-                    </a>
-                </li>
-            `;
-
-        })
-        .join("");
+                    const url =
+                        textoSeguro(
+                            fonte.url
+                        );
 
 
-    fontesElemento.innerHTML = `
+                    if (!url) {
+
+                        return `
+
+                            <li>
+                                ${escaparHTML(
+                                    nome
+                                )}
+                            </li>
+
+                        `;
+
+                    }
+
+
+                    return `
+
+                        <li>
+
+                            <a
+                                href="${escaparHTML(
+                                    url
+                                )}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                ${escaparHTML(
+                                    nome
+                                )}
+                            </a>
+
+                        </li>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+
+    fontesLista.innerHTML = `
+
         <ul>
             ${lista}
         </ul>
+
     `;
 
 }
@@ -636,24 +878,37 @@ function construirURLRelacionado(artigo) {
     if (!artigo) return "#";
 
 
-    let caminho = textoSeguro(
-        artigo.url
-    );
-
-
-    if (!caminho) {
-
-        const id = encodeURIComponent(
+    const id =
+        encodeURIComponent(
             artigo.id || ""
         );
+
+
+    let caminho =
+        textoSeguro(
+            artigo.url
+        );
+
+
+    // --------------------------------------------------------
+    // Se não houver URL definida
+    // --------------------------------------------------------
+
+    if (!caminho) {
 
         return `?id=${id}`;
 
     }
 
 
+    // --------------------------------------------------------
+    // URL absoluta
+    // --------------------------------------------------------
+
     if (
-        /^https?:\/\//i.test(caminho) ||
+        /^https?:\/\//i.test(
+            caminho
+        ) ||
         caminho.startsWith("//")
     ) {
 
@@ -662,166 +917,226 @@ function construirURLRelacionado(artigo) {
     }
 
 
-    caminho = caminho.replace(
-        /^\.?\//,
-        ""
-    );
+    // --------------------------------------------------------
+    // Limpar ./ inicial
+    // --------------------------------------------------------
 
+    caminho =
+        caminho.replace(
+            /^\.?\//,
+            ""
+        );
+
+
+    // --------------------------------------------------------
+    // Evitar artigos/artigo.html/artigo.html
+    // --------------------------------------------------------
 
     if (
-        caminho.startsWith("artigos/")
+        caminho.startsWith(
+            "artigos/"
+        )
     ) {
 
-        caminho = caminho.substring(
-            "artigos/".length
-        );
+        caminho =
+            caminho.substring(
+                "artigos/".length
+            );
 
     }
 
 
     return caminho.includes("?")
-        ? `${caminho}&id=${encodeURIComponent(
-            artigo.id || ""
-        )}`
-        : `${caminho}?id=${encodeURIComponent(
-            artigo.id || ""
-        )}`;
+        ? `${caminho}&id=${id}`
+        : `${caminho}?id=${id}`;
 
 }
 
 
 function renderizarRelacionados(artigo) {
 
-    const container = obterElemento(
-        "relatedArticles",
-        "artigosRelacionados"
-    );
+    const container =
+        obterElemento(
+            "relatedArticles",
+            "artigosRelacionados"
+        );
+
 
     if (!container) return;
 
 
-    const artigos = Array.isArray(
-        window.KYNENCE_ARTIGOS
-    )
-        ? window.KYNENCE_ARTIGOS
-        : [];
+    const artigos =
+        Array.isArray(
+            window.KYNENCE_ARTIGOS
+        )
+            ? window.KYNENCE_ARTIGOS
+            : [];
 
 
-    const relacionados = artigos
-        .filter(item => {
+    const relacionados =
+        artigos
 
-            if (!item.publicado) return false;
+            .filter(
+                item => {
 
-            if (
-                artigo.id &&
-                item.id === artigo.id
-            ) {
+                    if (
+                        item.publicado === false
+                    ) {
 
-                return false;
+                        return false;
 
-            }
+                    }
 
-            return true;
 
-        })
-        .sort((a, b) => {
+                    if (
+                        artigo.id &&
+                        String(item.id) ===
+                        String(artigo.id)
+                    ) {
 
-            const mesmaCategoriaA =
-                a.categoriaSlug ===
-                artigo.categoriaSlug
-                    ? 1
-                    : 0;
+                        return false;
 
-            const mesmaCategoriaB =
-                b.categoriaSlug ===
-                artigo.categoriaSlug
-                    ? 1
-                    : 0;
+                    }
 
-            return (
-                mesmaCategoriaB -
-                mesmaCategoriaA
+
+                    return true;
+
+                }
+            )
+
+            .sort(
+                (a, b) => {
+
+                    const mesmaCategoriaA =
+                        a.categoriaSlug ===
+                        artigo.categoriaSlug
+                            ? 1
+                            : 0;
+
+
+                    const mesmaCategoriaB =
+                        b.categoriaSlug ===
+                        artigo.categoriaSlug
+                            ? 1
+                            : 0;
+
+
+                    return (
+                        mesmaCategoriaB -
+                        mesmaCategoriaA
+                    );
+
+                }
+            )
+
+            .slice(
+                0,
+                KYNENCE_ARTIGO_CONFIG
+                    .quantidadeRelacionados
             );
-
-        })
-        .slice(
-            0,
-            KYNENCE_ARTIGO_CONFIG.quantidadeRelacionados
-        );
 
 
     if (!relacionados.length) {
 
-        container.innerHTML = "";
+        container.innerHTML = `
+
+            <div class="empty-state">
+
+                <p>
+                    Ainda não existem artigos relacionados.
+                </p>
+
+            </div>
+
+        `;
 
         return;
 
     }
 
 
-    container.innerHTML = relacionados
-        .map(item => {
+    container.innerHTML =
+        relacionados
+            .map(
+                item => {
 
-            return `
-                <article class="article-related-card">
+                    return `
 
-                    <span class="article-related-category">
-                        ${escaparHTML(
-                            textoSeguro(
-                                item.categoria,
-                                "Artigo"
-                            )
-                        )}
-                    </span>
+                        <article
+                            class="article-related-card"
+                        >
 
-                    <h3>
-                        <a href="${escaparHTML(
-                            construirURLRelacionado(item)
-                        )}">
-                            ${escaparHTML(
-                                textoSeguro(
-                                    item.titulo,
-                                    "Artigo"
-                                )
-                            )}
-                        </a>
-                    </h3>
+                            <span
+                                class="article-related-category"
+                            >
+                                ${escaparHTML(
+                                    textoSeguro(
+                                        item.categoria,
+                                        "Artigo"
+                                    )
+                                )}
+                            </span>
 
-                    <p>
-                        ${escaparHTML(
-                            textoSeguro(
-                                item.resumo
-                            )
-                        )}
-                    </p>
 
-                </article>
-            `;
+                            <h3>
 
-        })
-        .join("");
+                                <a
+                                    href="${escaparHTML(
+                                        construirURLRelacionado(
+                                            item
+                                        )
+                                    )}"
+                                >
+                                    ${escaparHTML(
+                                        textoSeguro(
+                                            item.titulo,
+                                            "Artigo"
+                                        )
+                                    )}
+                                </a>
+
+                            </h3>
+
+
+                            <p>
+                                ${escaparHTML(
+                                    textoSeguro(
+                                        item.resumo
+                                    )
+                                )}
+                            </p>
+
+                        </article>
+
+                    `;
+
+                }
+            )
+            .join("");
 
 }
 
 
 // ============================================================
-// 11. SEO — TÍTULO E META DESCRIPTION
+// 11. SEO
 // ============================================================
 
 function configurarSEO(artigo) {
 
-    const titulo = textoSeguro(
-        artigo.seoTitulo ||
-        artigo.titulo,
-        "KYNENCE LAB"
-    );
+    const titulo =
+        textoSeguro(
+            artigo.seoTitulo ||
+            artigo.titulo,
+            "KYNENCE LAB"
+        );
 
 
-    const descricao = textoSeguro(
-        artigo.seoDescricao ||
-        artigo.resumo,
-        "KYNENCE LAB — Finanças, Economia e Educação Financeira."
-    );
+    const descricao =
+        textoSeguro(
+            artigo.seoDescricao ||
+            artigo.resumo,
+            "KYNENCE LAB — Finanças, Economia e Educação Financeira."
+        );
 
 
     definirTituloPagina(
@@ -899,12 +1214,14 @@ function configurarSEO(artigo) {
     // Article
     // --------------------------------------------------------
 
-    definirMetaProperty(
-        "article:section",
-        textoSeguro(
+    if (artigo.categoria) {
+
+        definirMetaProperty(
+            "article:section",
             artigo.categoria
-        )
-    );
+        );
+
+    }
 
 
     if (artigo.dataISO) {
@@ -933,7 +1250,8 @@ function configurarSEO(artigo) {
 
     definirMetaProperty(
         "twitter:card",
-        KYNENCE_ARTIGO_CONFIG.tipoTwitterCard
+        KYNENCE_ARTIGO_CONFIG
+            .tipoTwitterCard
     );
 
 
@@ -963,22 +1281,11 @@ function configurarSEO(artigo) {
 
     // --------------------------------------------------------
     // Canonical
-    //
-    // Enquanto o domínio definitivo não existe,
-    // usamos a URL atual da página.
     // --------------------------------------------------------
 
-    if (
-        /^https?:$/i.test(
-            window.location.protocol
-        )
-    ) {
-
-        definirCanonical(
-            obterURLAtual()
-        );
-
-    }
+    definirCanonical(
+        obterURLAtual()
+    );
 
 }
 
@@ -989,57 +1296,71 @@ function configurarSEO(artigo) {
 
 function criarJSONLDArtigo(artigo) {
 
-    const titulo = textoSeguro(
-        artigo.seoTitulo ||
-        artigo.titulo
-    );
+    const titulo =
+        textoSeguro(
+            artigo.seoTitulo ||
+            artigo.titulo
+        );
 
 
-    const descricao = textoSeguro(
-        artigo.seoDescricao ||
-        artigo.resumo
-    );
+    const descricao =
+        textoSeguro(
+            artigo.seoDescricao ||
+            artigo.resumo
+        );
 
 
-    const url = obterURLAtual();
+    const url =
+        obterURLAtual();
 
 
     const dados = {
 
-        "@context": "https://schema.org",
+        "@context":
+            "https://schema.org",
 
-        "@type": "BlogPosting",
+        "@type":
+            "BlogPosting",
 
-        "headline": titulo,
+        "headline":
+            titulo,
 
-        "description": descricao,
+        "description":
+            descricao,
 
-        "url": url,
+        "url":
+            url,
 
         "mainEntityOfPage": {
 
-            "@type": "WebPage",
+            "@type":
+                "WebPage",
 
-            "@id": url
+            "@id":
+                url
 
         },
 
         "author": {
 
-            "@type": "Organization",
+            "@type":
+                "Organization",
 
-            "name": textoSeguro(
-                artigo.autor,
-                "KYNENCE LAB"
-            )
+            "name":
+                textoSeguro(
+                    artigo.autor,
+                    "KYNENCE LAB"
+                )
 
         },
 
         "publisher": {
 
-            "@type": "Organization",
+            "@type":
+                "Organization",
 
-            "name": "KYNENCE LAB"
+            "name":
+                "KYNENCE LAB"
 
         },
 
@@ -1059,7 +1380,9 @@ function criarJSONLDArtigo(artigo) {
     }
 
 
-    if (artigo.dataAtualizacaoISO) {
+    if (
+        artigo.dataAtualizacaoISO
+    ) {
 
         dados.dateModified =
             artigo.dataAtualizacaoISO;
@@ -1068,12 +1391,16 @@ function criarJSONLDArtigo(artigo) {
 
 
     if (
-        Array.isArray(artigo.tags) &&
+        Array.isArray(
+            artigo.tags
+        ) &&
         artigo.tags.length
     ) {
 
         dados.keywords =
-            artigo.tags.join(", ");
+            artigo.tags.join(
+                ", "
+            );
 
     }
 
@@ -1081,9 +1408,11 @@ function criarJSONLDArtigo(artigo) {
     if (artigo.imagem) {
 
         dados.image = [
+
             resolverURL(
                 artigo.imagem
             )
+
         ];
 
     }
@@ -1106,16 +1435,18 @@ function criarJSONLDBreadcrumb(artigo) {
     if (!artigo) return;
 
 
-    const categoria = textoSeguro(
-        artigo.categoria,
-        "Economia"
-    );
+    const categoria =
+        textoSeguro(
+            artigo.categoria,
+            "Economia"
+        );
 
 
-    const titulo = textoSeguro(
-        artigo.titulo,
-        "Artigo"
-    );
+    const titulo =
+        textoSeguro(
+            artigo.titulo,
+            "Artigo"
+        );
 
 
     const categoriaURL =
@@ -1138,45 +1469,59 @@ function criarJSONLDBreadcrumb(artigo) {
 
     const dados = {
 
-        "@context": "https://schema.org",
+        "@context":
+            "https://schema.org",
 
-        "@type": "BreadcrumbList",
+        "@type":
+            "BreadcrumbList",
 
         "itemListElement": [
 
             {
 
-                "@type": "ListItem",
+                "@type":
+                    "ListItem",
 
-                "position": 1,
+                "position":
+                    1,
 
-                "name": "Início",
+                "name":
+                    "Início",
 
-                "item": inicioURL
-
-            },
-
-            {
-
-                "@type": "ListItem",
-
-                "position": 2,
-
-                "name": categoria,
-
-                "item": categoriaURL
+                "item":
+                    inicioURL
 
             },
 
             {
 
-                "@type": "ListItem",
+                "@type":
+                    "ListItem",
 
-                "position": 3,
+                "position":
+                    2,
 
-                "name": titulo,
+                "name":
+                    categoria,
 
-                "item": artigoURL
+                "item":
+                    categoriaURL
+
+            },
+
+            {
+
+                "@type":
+                    "ListItem",
+
+                "position":
+                    3,
+
+                "name":
+                    titulo,
+
+                "item":
+                    artigoURL
 
             }
 
@@ -1202,19 +1547,22 @@ function inserirJSONLD(id, dados) {
     if (!id || !dados) return;
 
 
-    let script = document.getElementById(id);
+    let script =
+        document.getElementById(id);
 
 
     if (!script) {
 
-        script = document.createElement(
-            "script"
-        );
+        script =
+            document.createElement(
+                "script"
+            );
 
         script.type =
             "application/ld+json";
 
-        script.id = id;
+        script.id =
+            id;
 
         document.head.appendChild(
             script
@@ -1248,7 +1596,9 @@ function mostrarErroArtigo(mensagem) {
 
 
     const main =
-        document.querySelector("main");
+        document.querySelector(
+            "main"
+        );
 
 
     if (!main) return;
@@ -1256,11 +1606,14 @@ function mostrarErroArtigo(mensagem) {
 
     main.innerHTML = `
 
-        <section class="empty-state article-error">
+        <section
+            class="empty-state article-error"
+        >
 
             <h1>
                 Artigo não encontrado
             </h1>
+
 
             <p>
                 ${escaparHTML(
@@ -1269,13 +1622,16 @@ function mostrarErroArtigo(mensagem) {
                 )}
             </p>
 
+
             <p>
+
                 <a
                     class="button"
                     href="../index.html"
                 >
                     Voltar para o início
                 </a>
+
             </p>
 
         </section>
@@ -1293,11 +1649,20 @@ function inicializarMenuArtigo() {
 
     const menuButton =
         document.querySelector(
+            "#menuButton"
+        ) ||
+        document.querySelector(
             ".menu-button"
         );
 
 
     const navigation =
+        document.querySelector(
+            "#navigation"
+        ) ||
+        document.querySelector(
+            ".main-navigation"
+        ) ||
         document.querySelector(
             ".navigation"
         ) ||
@@ -1359,29 +1724,31 @@ function inicializarMenuArtigo() {
 
     navigation
         .querySelectorAll("a")
-        .forEach(link => {
+        .forEach(
+            link => {
 
-            link.addEventListener(
-                "click",
-                function () {
+                link.addEventListener(
+                    "click",
+                    function () {
 
-                    navigation.classList.remove(
-                        "active"
-                    );
+                        navigation.classList.remove(
+                            "active"
+                        );
 
-                    navigation.classList.remove(
-                        "menu-aberto"
-                    );
+                        navigation.classList.remove(
+                            "menu-aberto"
+                        );
 
-                    menuButton.setAttribute(
-                        "aria-expanded",
-                        "false"
-                    );
+                        menuButton.setAttribute(
+                            "aria-expanded",
+                            "false"
+                        );
 
-                }
-            );
+                    }
+                );
 
-        });
+            }
+        );
 
 
     document.addEventListener(
@@ -1421,7 +1788,8 @@ function inicializarMenuArtigo() {
         function (evento) {
 
             if (
-                evento.key === "Escape"
+                evento.key ===
+                "Escape"
             ) {
 
                 navigation.classList.remove(
@@ -1461,7 +1829,8 @@ function atualizarAnoFooterArtigo() {
         elemento => {
 
             elemento.textContent =
-                new Date().getFullYear();
+                new Date()
+                    .getFullYear();
 
         }
     );
@@ -1475,19 +1844,49 @@ function atualizarAnoFooterArtigo() {
 
 function inicializarArtigoKynence() {
 
+    if (
+        window.__KYNENCE_ARTIGO_INICIALIZADO
+    ) {
+
+        return;
+
+    }
+
+
+    window.__KYNENCE_ARTIGO_INICIALIZADO =
+        true;
+
+
+    console.log(
+        "[KYNENCE] Inicializando artigo..."
+    );
+
+
     const artigo =
         encontrarArtigo();
 
 
     if (!artigo) {
 
+        console.warn(
+            "[KYNENCE] Artigo não encontrado."
+        );
+
+
         mostrarErroArtigo(
             "Verifique o endereço do artigo ou volte para a página inicial."
         );
 
+
         return;
 
     }
+
+
+    console.log(
+        "[KYNENCE] Artigo encontrado:",
+        artigo
+    );
 
 
     // --------------------------------------------------------
@@ -1559,20 +1958,29 @@ function inicializarArtigoKynence() {
 
     atualizarAnoFooterArtigo();
 
+
+    console.log(
+        "[KYNENCE] Artigo inicializado com sucesso."
+    );
+
 }
 
 
 // ============================================================
-// 19. EXECUÇÃO
+// 19. EXECUÇÃO ROBUSTA
 // ============================================================
 
 if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
 ) {
 
     document.addEventListener(
         "DOMContentLoaded",
-        inicializarArtigoKynence
+        inicializarArtigoKynence,
+        {
+            once: true
+        }
     );
 
 } else {
@@ -1589,14 +1997,34 @@ if (
 window.encontrarArtigo =
     encontrarArtigo;
 
+
 window.inicializarArtigoKynence =
     inicializarArtigoKynence;
+
 
 window.criarBreadcrumb =
     criarBreadcrumb;
 
+
 window.criarJSONLDArtigo =
     criarJSONLDArtigo;
 
+
 window.criarJSONLDBreadcrumb =
     criarJSONLDBreadcrumb;
+
+
+window.renderizarCabecalhoArtigo =
+    renderizarCabecalhoArtigo;
+
+
+window.renderizarConteudoArtigo =
+    renderizarConteudoArtigo;
+
+
+window.renderizarFontes =
+    renderizarFontes;
+
+
+window.renderizarRelacionados =
+    renderizarRelacionados;
