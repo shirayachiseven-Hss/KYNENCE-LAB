@@ -1,24 +1,21 @@
 // ============================================================
 // KYNENCE LAB
 // KYNENCE API
-// V1.7.2 — Correção KYNENCE_DATA
+// V1.8.0
 // ============================================================
 //
-// Este arquivo:
+// FUNCIONALIDADES:
 //
-// 1. Busca dados atuais no Banco Mundial
-// 2. Busca histórico
-// 3. Busca metadados
-// 4. Atualiza window.KYNENCE_DATA
-// 5. Notifica o script.js
+// 1. Dados atuais
+// 2. Histórico económico
+// 3. Metadados oficiais
+// 4. Cálculo de variações
+// 5. Estados dos indicadores
+// 6. Tratamento de erros
+// 7. Proteção contra atualizações simultâneas
+// 8. Comunicação com script.js
 //
-// IMPORTANTE:
-//
-// O arquivo indicadores.js utiliza:
-//
-//     window.KYNENCE_DATA
-//
-// Portanto este arquivo também utiliza KYNENCE_DATA.
+// PAÍS: ANGOLA (AGO)
 //
 // ============================================================
 
@@ -29,23 +26,27 @@
 
 const KYNENCE_API = {
 
-    baseURL:
-        "https://api.worldbank.org/v2",
+    baseURL: "https://api.worldbank.org/v2",
 
-    pais:
-        "AGO",
+    pais: "AGO",
 
-    anosHistorico:
-        6
+    anosHistorico: 6,
+
+    formato: "json"
 
 };
 
 
+// Evita atualizações simultâneas.
+
+let kynenceAtualizacaoEmAndamento = null;
+
+
 // ============================================================
-// 2. VERIFICAR RESPOSTA DO WORLD BANK
+// 2. FUNÇÕES AUXILIARES
 // ============================================================
 
-function respostaWorldBankValida(dados) {
+function respostaWorldBankEstruturada(dados) {
 
     return (
 
@@ -53,12 +54,134 @@ function respostaWorldBankValida(dados) {
 
         dados.length >= 2 &&
 
-        Array.isArray(dados[1]) &&
-
-        dados[1].length > 0
+        Array.isArray(dados[1])
 
     );
 
+}
+
+
+function formatarNumeroKynence(valor) {
+
+    return new Intl.NumberFormat(
+
+        "pt-PT",
+
+        {
+
+            maximumFractionDigits: 2
+
+        }
+
+    ).format(valor);
+
+}
+
+
+function criarUrlWorldBank(caminho, parametros = {}) {
+
+    const url = new URL(
+
+        `${KYNENCE_API.baseURL}${caminho}`
+
+    );
+
+    Object.entries(parametros).forEach(
+
+        ([chave, valor]) => {
+
+            url.searchParams.set(chave, valor);
+
+        }
+
+    );
+
+    return url.toString();
+
+}
+
+
+// ==========================================
+// KYNENCE REQUEST MANAGER V1.0
+// Fila de pedidos e recuperação automática
+// ==========================================
+
+let kynenceFilaRequisicoes = Promise.resolve();
+
+function requisicaoWorldBank(url) {
+
+    async function executarPedido() {
+
+        const maxTentativas = 3;
+
+        for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+
+            try {
+
+                console.log(
+                    `[KYNENCE API] Pedido ${tentativa}/${maxTentativas}:`,
+                    url
+                );
+
+                const resposta = await fetch(url);
+
+                if (!resposta.ok) {
+                    throw new Error(
+                        `Erro HTTP ${resposta.status}`
+                    );
+                }
+
+                const dados = await resposta.json();
+
+                if (
+                    !Array.isArray(dados) ||
+                    !Array.isArray(dados[1])
+                ) {
+                    throw new Error(
+                        "Resposta inválida do Banco Mundial."
+                    );
+                }
+
+                console.log(
+                    "[KYNENCE API] Pedido concluído:",
+                    url
+                );
+
+                return dados[1];
+
+            } catch (erro) {
+
+                console.warn(
+                    `[KYNENCE API] Tentativa ${tentativa} falhou:`,
+                    erro.message
+                );
+
+                if (tentativa === maxTentativas) {
+                    throw erro;
+                }
+
+                const espera = tentativa * 1000;
+
+                await new Promise(resolve =>
+                    setTimeout(resolve, espera)
+                );
+            }
+        }
+    }
+
+    // Coloca o pedido na fila.
+    const pedido = kynenceFilaRequisicoes.then(
+        executarPedido,
+        executarPedido
+    );
+
+    // Mantém a fila funcional mesmo quando um pedido falha.
+    kynenceFilaRequisicoes = pedido.then(
+        () => undefined,
+        () => undefined
+    );
+
+    return pedido;
 }
 
 
@@ -67,101 +190,101 @@ function respostaWorldBankValida(dados) {
 // ============================================================
 
 async function buscarIndicadorWorldBank(
+
     codigoIndicador
+
 ) {
 
-    const url =
+    const url = criarUrlWorldBank(
 
-        `${KYNENCE_API.baseURL}` +
+        `/country/${KYNENCE_API.pais}/indicator/${codigoIndicador}`,
 
-        `/country/${KYNENCE_API.pais}` +
+        {
 
-        `/indicator/${codigoIndicador}` +
+            format: KYNENCE_API.formato,
 
-        `?format=json` +
+            mrnev: 1,
 
-        `&mrnev=1` +
+            per_page: 10
 
-        `&per_page=10`;
+        }
 
-
-    console.log(
-        `[KYNENCE API] Dados atuais → ${codigoIndicador}`
     );
 
 
-    const resposta =
-        await fetch(url);
+    console.log(
+
+        `[KYNENCE API] Dados atuais → ${codigoIndicador}`
+
+    );
 
 
-    if (!resposta.ok) {
+    const registros = await requisicaoWorldBank(url);
 
-        throw new Error(
-            `HTTP ${resposta.status}`
-        );
+
+    const registro = registros.find(
+
+        item =>
+
+            item &&
+
+            item.value !== null &&
+
+            item.value !== undefined
+
+    );
+
+
+    if (!registro) {
+
+        return null;
 
     }
-
-
-    const dados =
-        await resposta.json();
-
-
-    if (
-        !respostaWorldBankValida(dados)
-    ) {
-
-        throw new Error(
-            "A API não devolveu dados válidos."
-        );
-
-    }
-
-
-    const registro =
-        dados[1][0];
 
 
     return {
 
-        periodo:
-            registro.date || null,
+        periodo: registro.date || null,
 
-        valor:
-            registro.value !== null
-                ? Number(registro.value)
-                : null,
+        valor: Number(registro.value),
 
-        unidade:
-            registro.unit || "",
+        unidade: registro.unit || "",
 
         pais:
+
             registro.country?.value ||
+
             "Angola",
 
         codigoPais:
+
             registro.countryiso3code ||
+
             KYNENCE_API.pais,
 
         indicadorId:
+
             registro.indicator?.id ||
+
             codigoIndicador,
 
         indicadorNome:
+
             registro.indicator?.value ||
+
             "",
 
         statusObservacao:
-            registro.obs_status ||
-            "",
+
+            registro.obs_status || "",
 
         decimal:
-            registro.decimal ??
-            null,
+
+            registro.decimal ?? null,
 
         escala:
-            registro.scale ??
-            null
+
+            registro.scale ?? null
 
     };
 
@@ -173,69 +296,49 @@ async function buscarIndicadorWorldBank(
 // ============================================================
 
 async function buscarHistoricoWorldBank(
+
     codigoIndicador
+
 ) {
 
-    const anoAtual =
-        new Date().getFullYear();
+    const anoAtual = new Date().getFullYear();
 
 
     const anoInicial =
+
         anoAtual -
+
         (KYNENCE_API.anosHistorico - 1);
 
 
-    const url =
+    const url = criarUrlWorldBank(
 
-        `${KYNENCE_API.baseURL}` +
+        `/country/${KYNENCE_API.pais}/indicator/${codigoIndicador}`,
 
-        `/country/${KYNENCE_API.pais}` +
+        {
 
-        `/indicator/${codigoIndicador}` +
+            format: KYNENCE_API.formato,
 
-        `?format=json` +
+            date: `${anoInicial}:${anoAtual}`,
 
-        `&date=${anoInicial}:${anoAtual}` +
+            per_page: 100
 
-        `&per_page=100`;
+        }
 
-
-    console.log(
-        `[KYNENCE API] Histórico → ${codigoIndicador}`
     );
 
 
-    const resposta =
-        await fetch(url);
+    console.log(
+
+        `[KYNENCE API] Histórico → ${codigoIndicador}`
+
+    );
 
 
-    if (!resposta.ok) {
-
-        throw new Error(
-            `HTTP ${resposta.status}`
-        );
-
-    }
+    const registros = await requisicaoWorldBank(url);
 
 
-    const dados =
-        await resposta.json();
-
-
-    if (
-        !respostaWorldBankValida(dados)
-    ) {
-
-        console.warn(
-            `[KYNENCE API] Sem histórico: ${codigoIndicador}`
-        );
-
-        return [];
-
-    }
-
-
-    return dados[1]
+    return registros
 
         .filter(registro => {
 
@@ -245,7 +348,9 @@ async function buscarHistoricoWorldBank(
 
                 registro.date &&
 
-                registro.value !== null
+                registro.value !== null &&
+
+                registro.value !== undefined
 
             );
 
@@ -255,15 +360,13 @@ async function buscarHistoricoWorldBank(
 
             return {
 
-                periodo:
-                    registro.date,
+                periodo: registro.date,
 
-                valor:
-                    Number(registro.value),
+                valor: Number(registro.value),
 
                 statusObservacao:
-                    registro.obs_status ||
-                    ""
+
+                    registro.obs_status || ""
 
             };
 
@@ -289,88 +392,90 @@ async function buscarHistoricoWorldBank(
 // ============================================================
 
 async function buscarMetadadosWorldBank(
+
     codigoIndicador
+
 ) {
 
-    const url =
+    const url = criarUrlWorldBank(
 
-        `${KYNENCE_API.baseURL}` +
+        `/indicator/${codigoIndicador}`,
 
-        `/indicator/${codigoIndicador}` +
+        {
 
-        `?format=json&per_page=1`;
+            format: KYNENCE_API.formato,
 
+            per_page: 1
 
-    console.log(
-        `[KYNENCE API] Metadados → ${codigoIndicador}`
+        }
+
     );
 
 
-    const resposta =
-        await fetch(url);
+    console.log(
+
+        `[KYNENCE API] Metadados → ${codigoIndicador}`
+
+    );
 
 
-    if (!resposta.ok) {
+    const registros = await requisicaoWorldBank(url);
+
+
+    const registro = registros[0];
+
+
+    if (!registro) {
 
         throw new Error(
-            `HTTP ${resposta.status}`
+
+            "Metadados não encontrados."
+
         );
 
     }
-
-
-    const dados =
-        await resposta.json();
-
-
-    if (
-        !respostaWorldBankValida(dados)
-    ) {
-
-        throw new Error(
-            "Metadados inválidos."
-        );
-
-    }
-
-
-    const registro =
-        dados[1][0];
 
 
     return {
 
         id:
+
             registro.id ||
+
             codigoIndicador,
 
         nome:
-            registro.name ||
-            "",
+
+            registro.name || "",
 
         unidade:
-            registro.unit ||
-            "",
+
+            registro.unit || "",
 
         descricao:
-            registro.sourceNote ||
-            "",
+
+            registro.sourceNote || "",
 
         organizacao:
-            registro.sourceOrganization ||
-            "",
+
+            registro.sourceOrganization || "",
 
         fonte:
+
             registro.source?.value ||
+
             "World Bank",
 
         fonteId:
-            registro.source?.id ||
-            "",
+
+            registro.source?.id || "",
 
         topicos:
+
             Array.isArray(registro.topics)
+
                 ? registro.topics
+
                 : []
 
     };
@@ -379,17 +484,19 @@ async function buscarMetadadosWorldBank(
 
 
 // ============================================================
-// 6. APLICAR DADOS ATUAIS
+// 6. CALCULAR VARIAÇÃO
 // ============================================================
 
-function aplicarResultadoIndicador(
-    indicador,
-    resultado
-) {
+function calcularVariacaoIndicador(indicador) {
 
     if (
+
         !indicador ||
-        !resultado
+
+        indicador.valor === null ||
+
+        !Array.isArray(indicador.historico)
+
     ) {
 
         return;
@@ -397,69 +504,213 @@ function aplicarResultadoIndicador(
     }
 
 
-    indicador.valor =
-        resultado.valor;
+    const periodoAtual = Number(indicador.periodo);
 
 
-    indicador.periodo =
-        resultado.periodo;
+    const registrosAnteriores =
+
+        indicador.historico.filter(registro => {
+
+            return (
+
+                Number(registro.periodo) <
+
+                periodoAtual
+
+            );
+
+        });
 
 
-    indicador.pais =
-        resultado.pais ||
-        indicador.pais;
+    if (!registrosAnteriores.length) {
 
+        indicador.variacaoValor = null;
 
-    indicador.codigoPais =
-        resultado.codigoPais ||
-        indicador.codigoPais;
+        indicador.variacaoPercentual = null;
 
+        indicador.periodoAnterior = null;
 
-    indicador.statusObservacao =
-        resultado.statusObservacao ||
-        "";
+        indicador.tendencia = "indisponivel";
 
+        indicador.variacao = "Sem comparação";
 
-    indicador.decimal =
-        resultado.decimal;
-
-
-    indicador.escala =
-        resultado.escala;
-
-
-    /*
-       Mantemos a unidade original do KYNENCE LAB.
-
-       A unidade oficial ficará em:
-
-       indicador.unidadeOficial
-    */
-
-    if (
-        !indicador.unidade &&
-        resultado.unidade
-    ) {
-
-        indicador.unidade =
-            resultado.unidade;
+        return;
 
     }
 
 
-    indicador.ultimaAtualizacao =
-        new Date().toISOString();
+    const anterior =
+
+        registrosAnteriores[
+
+            registrosAnteriores.length - 1
+
+        ];
+
+
+    const diferenca =
+
+        indicador.valor - anterior.valor;
+
+
+    const variacaoPercentual =
+
+        anterior.valor !== 0
+
+            ? (diferenca / Math.abs(anterior.valor)) * 100
+
+            : null;
+
+
+    indicador.variacaoValor = diferenca;
+
+    indicador.variacaoPercentual =
+
+        variacaoPercentual;
+
+
+    indicador.periodoAnterior =
+
+        anterior.periodo;
+
+
+    indicador.tendencia =
+
+        diferenca > 0
+
+            ? "alta"
+
+            : diferenca < 0
+
+                ? "baixa"
+
+                : "estavel";
+
+
+    const sinal =
+
+        diferenca > 0
+
+            ? "+"
+
+            : "";
+
+
+    const unidadeVariacao =
+
+        indicador.unidade === "%"
+
+            ? " pontos percentuais"
+
+            : ` ${indicador.unidade}`;
+
+
+    indicador.variacao =
+
+        `${sinal}${formatarNumeroKynence(diferenca)}` +
+
+        unidadeVariacao;
+
 
 }
 
 
 // ============================================================
-// 7. APLICAR HISTÓRICO
+// 7. APLICAR DADOS ATUAIS
+// ============================================================
+
+function aplicarResultadoIndicador(
+
+    indicador,
+
+    resultado
+
+) {
+
+    if (!indicador) {
+
+        return;
+
+    }
+
+
+    if (!resultado) {
+
+        indicador.estadoDados = "sem-dados";
+
+        indicador.statusDados = "sem-dados";
+
+        indicador.erroDados = null;
+
+        return;
+
+    }
+
+
+    indicador.valor = resultado.valor;
+
+    indicador.periodo = resultado.periodo;
+
+
+    indicador.pais =
+
+        resultado.pais ||
+
+        indicador.pais;
+
+
+    indicador.codigoPais =
+
+        resultado.codigoPais ||
+
+        indicador.codigoPais;
+
+
+    indicador.statusObservacao =
+
+        resultado.statusObservacao;
+
+
+    indicador.decimal = resultado.decimal;
+
+    indicador.escala = resultado.escala;
+
+
+    indicador.unidadeOficial =
+
+        resultado.unidade || "";
+
+
+    indicador.estadoDados = "atualizado";
+
+    indicador.statusDados = "atualizado";
+
+
+    indicador.erroDados = null;
+
+
+    // Momento em que o sistema obteve os dados.
+
+    const agora = new Date().toISOString();
+
+
+    indicador.ultimaAtualizacao = agora;
+
+    indicador.dataConsulta = agora;
+
+}
+
+
+// ============================================================
+// 8. APLICAR HISTÓRICO
 // ============================================================
 
 function aplicarHistoricoIndicador(
+
     indicador,
+
     historico
+
 ) {
 
     if (!indicador) {
@@ -477,22 +728,31 @@ function aplicarHistoricoIndicador(
 
             : [];
 
+
+    indicador.estadoHistorico =
+
+        indicador.historico.length
+
+            ? "disponivel"
+
+            : "sem-historico";
+
 }
 
 
 // ============================================================
-// 8. APLICAR METADADOS
+// 9. APLICAR METADADOS
 // ============================================================
 
 function aplicarMetadadosIndicador(
+
     indicador,
+
     metadados
+
 ) {
 
-    if (
-        !indicador ||
-        !metadados
-    ) {
+    if (!indicador || !metadados) {
 
         return;
 
@@ -508,30 +768,22 @@ function aplicarMetadadosIndicador(
 
     indicador.nomeOficial =
 
-        metadados.nome ||
-
-        "";
+        metadados.nome || "";
 
 
     indicador.unidadeOficial =
 
-        metadados.unidade ||
-
-        "";
+        metadados.unidade || "";
 
 
     indicador.descricaoOficial =
 
-        metadados.descricao ||
-
-        "";
+        metadados.descricao || "";
 
 
     indicador.organizacaoFonte =
 
-        metadados.organizacao ||
-
-        "";
+        metadados.organizacao || "";
 
 
     indicador.fonteOficial =
@@ -545,37 +797,41 @@ function aplicarMetadadosIndicador(
 
     indicador.fonteId =
 
-        metadados.fonteId ||
-
-        "";
+        metadados.fonteId || "";
 
 
     indicador.topicosOficiais =
 
-        Array.isArray(metadados.topicos)
+        metadados.topicos || [];
 
-            ? metadados.topicos
 
-            : [];
+    indicador.estadoMetadados = "disponivel";
 
 }
 
 
 // ============================================================
-// 9. ATUALIZAR UM INDICADOR
+// 10. ATUALIZAR UM INDICADOR
 // ============================================================
 
 async function atualizarIndicadorWorldBank(
+
     indicador
+
 ) {
 
     if (
+
         !indicador ||
+
         !indicador.codigoIndicador
+
     ) {
 
         console.warn(
+
             "[KYNENCE API] Indicador inválido."
+
         );
 
         return indicador;
@@ -583,70 +839,74 @@ async function atualizarIndicadorWorldBank(
     }
 
 
-    const codigo =
-        indicador.codigoIndicador;
+    const codigo = indicador.codigoIndicador;
+
+
+    indicador.estadoDados = "carregando";
+
+    indicador.statusDados = "carregando";
 
 
     console.log(
+
         `[KYNENCE API] Atualizando → ${codigo}`
+
     );
 
 
-    // ========================================================
-    // 9.1 DADOS ATUAIS
-    // ========================================================
+    // --------------------------------------------------------
+    // 10.1 DADOS ATUAIS
+    // --------------------------------------------------------
 
     try {
 
-        const resultadoAtual =
+        const resultado =
 
-            await buscarIndicadorWorldBank(
-                codigo
-            );
+            await buscarIndicadorWorldBank(codigo);
 
 
         aplicarResultadoIndicador(
 
             indicador,
 
-            resultadoAtual
+            resultado
 
-        );
-
-
-        console.log(
-            `[KYNENCE API] ✓ Dados → ${codigo}`
         );
 
 
     } catch (erro) {
 
         console.error(
-            `[KYNENCE API] ✗ Dados → ${codigo}`,
+
+            `[KYNENCE API] Erro nos dados → ${codigo}`,
+
             erro
+
         );
 
+
+        indicador.estadoDados = "erro";
+
+        indicador.statusDados = "erro";
 
         indicador.erroDados =
 
             erro.message ||
 
-            "Erro ao buscar dados.";
+            "Erro ao obter dados.";
 
     }
 
 
-    // ========================================================
-    // 9.2 HISTÓRICO
-    // ========================================================
+    // --------------------------------------------------------
+    // 10.2 HISTÓRICO
+    // --------------------------------------------------------
 
     try {
 
         const historico =
 
-            await buscarHistoricoWorldBank(
-                codigo
-            );
+            await buscarHistoricoWorldBank(codigo);
 
 
         aplicarHistoricoIndicador(
@@ -658,20 +918,11 @@ async function atualizarIndicadorWorldBank(
         );
 
 
-        console.log(
-
-            `[KYNENCE API] ✓ Histórico → ` +
-
-            `${codigo} (${historico.length} pontos)`
-
-        );
-
-
     } catch (erro) {
 
         console.warn(
 
-            `[KYNENCE API] ⚠ Histórico → ${codigo}`,
+            `[KYNENCE API] Erro no histórico → ${codigo}`,
 
             erro
 
@@ -682,20 +933,21 @@ async function atualizarIndicadorWorldBank(
 
             indicador.historico || [];
 
+
+        indicador.estadoHistorico = "erro";
+
     }
 
 
-    // ========================================================
-    // 9.3 METADADOS
-    // ========================================================
+    // --------------------------------------------------------
+    // 10.3 METADADOS
+    // --------------------------------------------------------
 
     try {
 
         const metadados =
 
-            await buscarMetadadosWorldBank(
-                codigo
-            );
+            await buscarMetadadosWorldBank(codigo);
 
 
         aplicarMetadadosIndicador(
@@ -707,27 +959,40 @@ async function atualizarIndicadorWorldBank(
         );
 
 
-        console.log(
-            `[KYNENCE API] ✓ Metadados → ${codigo}`
-        );
-
-
     } catch (erro) {
 
         console.warn(
 
-            `[KYNENCE API] ⚠ Metadados → ${codigo}`,
+            `[KYNENCE API] Erro nos metadados → ${codigo}`,
 
             erro
 
         );
 
+
+        indicador.estadoMetadados = "erro";
+
     }
 
 
-    // ========================================================
-    // RESULTADO
-    // ========================================================
+    // --------------------------------------------------------
+    // 10.4 VARIAÇÃO
+    // --------------------------------------------------------
+
+    if (
+
+        indicador.estadoDados === "atualizado"
+
+    ) {
+
+        calcularVariacaoIndicador(indicador);
+
+    }
+
+
+    // --------------------------------------------------------
+    // 10.5 RESULTADO
+    // --------------------------------------------------------
 
     console.log(
 
@@ -735,21 +1000,17 @@ async function atualizarIndicadorWorldBank(
 
         {
 
-            valor:
-                indicador.valor,
+            valor: indicador.valor,
 
-            periodo:
-                indicador.periodo,
+            periodo: indicador.periodo,
+
+            variacao: indicador.variacao,
 
             historico:
+
                 indicador.historico?.length || 0,
 
-            fonte:
-                indicador.fonteOficial ||
-
-                indicador.fonte ||
-
-                "World Bank"
+            estado: indicador.estadoDados
 
         }
 
@@ -762,32 +1023,28 @@ async function atualizarIndicadorWorldBank(
 
 
 // ============================================================
-// 10. ATUALIZAR KYNENCE DATA
+// 11. ATUALIZAR KYNENCE DATA
 // ============================================================
 
 async function atualizarKynenceData() {
 
 
-    // ========================================================
-    // CORREÇÃO PRINCIPAL
-    // ========================================================
-    //
-    // O indicadores.js cria:
-    //
-    // window.KYNENCE_DATA
-    //
-    // e não:
-    //
-    // window.KYNENCE_INDICADORES
-    //
-    // ========================================================
+    // Evita executar duas atualizações ao mesmo tempo.
+
+    if (kynenceAtualizacaoEmAndamento) {
+
+        console.warn(
+
+            "[KYNENCE API] Atualização já em andamento."
+
+        );
+
+        return kynenceAtualizacaoEmAndamento;
+
+    }
 
 
-    if (
-        !Array.isArray(
-            window.KYNENCE_DATA
-        )
-    ) {
+    if (!Array.isArray(window.KYNENCE_DATA)) {
 
         console.error(
 
@@ -797,132 +1054,150 @@ async function atualizarKynenceData() {
 
         );
 
-
-        return;
+        return [];
 
     }
 
 
     console.log(
+
         "=============================================="
+
     );
 
 
     console.log(
-        "[KYNENCE API] " +
-        "Iniciando atualização..."
+
+        "[KYNENCE API] Iniciando atualização..."
+
     );
+
+
+    const indicadores = window.KYNENCE_DATA;
 
 
     console.log(
 
         "[KYNENCE API] Indicadores encontrados:",
 
-        window.KYNENCE_DATA.length
+        indicadores.length
 
     );
 
 
-    // ========================================================
-    // ATUALIZAR TODOS
-    // ========================================================
+    kynenceAtualizacaoEmAndamento = (async () => {
 
-    await Promise.all(
+        try {
 
-        window.KYNENCE_DATA.map(
+            await Promise.all(
 
-            indicador =>
+                indicadores.map(indicador =>
 
-                atualizarIndicadorWorldBank(
-                    indicador
+                    atualizarIndicadorWorldBank(
+
+                        indicador
+
+                    )
+
                 )
 
-        )
-
-    );
+            );
 
 
-    // ========================================================
-    // CONCLUÍDO
-    // ========================================================
+            console.log(
 
-    console.log(
+                "[KYNENCE API] Atualização concluída."
 
-        "[KYNENCE API] " +
-
-        "Atualização concluída."
-
-    );
+            );
 
 
-    // ========================================================
-    // AVISAR O SCRIPT.JS
-    // ========================================================
+            document.dispatchEvent(
 
-    document.dispatchEvent(
+                new CustomEvent(
 
-        new CustomEvent(
+                    "kynenceDataAtualizado"
 
-            "kynenceDataAtualizado"
+                )
 
-        )
-
-    );
+            );
 
 
-    return window.KYNENCE_DATA;
+            return indicadores;
+
+        } finally {
+
+            kynenceAtualizacaoEmAndamento = null;
+
+        }
+
+    })();
+
+
+    return kynenceAtualizacaoEmAndamento;
 
 }
 
 
 // ============================================================
-// 11. ATUALIZAÇÃO MANUAL
+// 12. ATUALIZAÇÃO MANUAL
 // ============================================================
 
 async function atualizarKynenceDataManual() {
 
     console.log(
+
         "[KYNENCE API] Atualização manual iniciada."
+
     );
 
 
-    return await atualizarKynenceData();
+    return atualizarKynenceData();
 
 }
 
 
 // ============================================================
-// 12. EXPOR FUNÇÕES
+// 13. EXPOR FUNÇÕES
 // ============================================================
 
-window.KYNENCE_API =
-    KYNENCE_API;
+window.KYNENCE_API = KYNENCE_API;
 
 
 window.buscarIndicadorWorldBank =
+
     buscarIndicadorWorldBank;
 
 
 window.buscarHistoricoWorldBank =
+
     buscarHistoricoWorldBank;
 
 
 window.buscarMetadadosWorldBank =
+
     buscarMetadadosWorldBank;
 
 
+window.calcularVariacaoIndicador =
+
+    calcularVariacaoIndicador;
+
+
 window.atualizarIndicadorWorldBank =
+
     atualizarIndicadorWorldBank;
 
 
 window.atualizarKynenceData =
+
     atualizarKynenceData;
 
 
 window.atualizarKynenceDataManual =
+
     atualizarKynenceDataManual;
 
 
 // ============================================================
-// FIM — KYNENCE API V1.7.2
+// FIM — KYNENCE API V1.8.0
 // ============================================================

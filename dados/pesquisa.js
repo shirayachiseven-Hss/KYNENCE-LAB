@@ -1,31 +1,34 @@
 /* =========================================================
    KYNENCE LAB
    SISTEMA DE PESQUISA
-   V2.0
+   V2.1 — Pesquisa + Navegação corrigida
+
+   Arquitetura atual:
+
+   /index.html
+   /artigo.html?id=inflacao
+   /pesquisa.html?q=inflacao
+   /categorias/categoria.html?categoria=economia
 
    Responsabilidades:
 
    - Ler ?q= da URL
-   - Pesquisar no catálogo KYNENCE_ARTIGOS
-   - Pesquisar por:
-       • título
-       • resumo
-       • categoria
-       • categoriaSlug
-       • tags
-       • SEO
-   - Ignorar artigos não publicados
+   - Pesquisar artigos publicados
+   - Pesquisar por título
+   - Pesquisar por resumo
+   - Pesquisar por categoria
+   - Pesquisar por categoriaSlug
+   - Pesquisar por tags
+   - Pesquisar por SEO
    - Normalizar acentos
+   - Calcular relevância
    - Ordenar resultados
-   - Mostrar quantidade de resultados
-   - Criar cartões de resultados
-   - Criar links corretos para os artigos
-   - Atualizar a URL sem recarregar
-   - Mostrar estados vazios e erros
-
-   Exemplo:
-
-   pesquisa.html?q=inflacao
+   - Criar cartões
+   - Criar links corretos para artigo.html
+   - Atualizar URL sem recarregar
+   - Mostrar estados vazios
+   - Mostrar erros
+   - Inicialização robusta
 
    ========================================================= */
 
@@ -39,15 +42,18 @@ const searchForm =
         "searchForm"
     );
 
+
 const searchInput =
     document.getElementById(
         "searchInput"
     );
 
+
 const searchResults =
     document.getElementById(
         "searchResults"
     );
+
 
 const searchInfo =
     document.getElementById(
@@ -59,14 +65,61 @@ const searchInfo =
    2. INICIALIZAÇÃO
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+function inicializarPesquisa() {
 
-        iniciarPesquisa();
+    /*
+       Evitar inicialização duplicada.
+    */
+
+    if (
+        window.__KYNENCE_PESQUISA_INICIALIZADA
+    ) {
+
+        return;
 
     }
-);
+
+
+    window.__KYNENCE_PESQUISA_INICIALIZADA =
+        true;
+
+
+    console.log(
+        "[KYNENCE] Inicializando pesquisa..."
+    );
+
+
+    iniciarPesquisa();
+
+
+    console.log(
+        "[KYNENCE] Pesquisa inicializada com sucesso."
+    );
+
+}
+
+
+/*
+   DOM ainda carregando.
+*/
+
+if (
+    document.readyState === "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        inicializarPesquisa,
+        {
+            once: true
+        }
+    );
+
+} else {
+
+    inicializarPesquisa();
+
+}
 
 
 /* =========================================================
@@ -76,7 +129,7 @@ document.addEventListener(
 function iniciarPesquisa() {
 
     /*
-       Verificar elementos.
+       Verificar elementos essenciais.
     */
 
     if (
@@ -85,13 +138,17 @@ function iniciarPesquisa() {
         !searchResults
     ) {
 
+        console.warn(
+            "[KYNENCE] Elementos da pesquisa não encontrados."
+        );
+
         return;
 
     }
 
 
     /*
-       Verificar catálogo.
+       Verificar catálogo de artigos.
     */
 
     if (
@@ -109,12 +166,15 @@ function iniciarPesquisa() {
     }
 
 
-    /*
-       Ler ?q= da URL.
+    console.log(
+        "[KYNENCE] Total de artigos disponíveis:",
+        window.KYNENCE_ARTIGOS.length
+    );
 
-       URLSearchParams é utilizado
-       para interpretar a query string.
-    */
+
+    /* =====================================================
+       LER ?q= DA URL
+    ===================================================== */
 
     const parametros =
         new URLSearchParams(
@@ -129,14 +189,15 @@ function iniciarPesquisa() {
 
 
     /*
-       Se houver pesquisa na URL,
-       preencher e executar.
+       Se existir pesquisa na URL,
+       executar automaticamente.
     */
 
     if (consultaInicial) {
 
         searchInput.value =
             consultaInicial;
+
 
         executarPesquisa(
             consultaInicial
@@ -149,9 +210,9 @@ function iniciarPesquisa() {
     }
 
 
-    /*
-       Formulário.
-    */
+    /* =====================================================
+       FORMULÁRIO
+    ===================================================== */
 
     searchForm.addEventListener(
         "submit",
@@ -187,10 +248,6 @@ function atualizarURL(
     consulta
 ) {
 
-    /*
-       Criar URL com base na página atual.
-    */
-
     const url =
         new URL(
             window.location.href
@@ -198,7 +255,7 @@ function atualizarURL(
 
 
     /*
-       Limpar q.
+       Remover pesquisa anterior.
     */
 
     url.searchParams.delete(
@@ -207,8 +264,8 @@ function atualizarURL(
 
 
     /*
-       Adicionar q somente
-       quando houver pesquisa.
+       Adicionar somente se existir
+       uma consulta.
     */
 
     if (consulta) {
@@ -222,14 +279,19 @@ function atualizarURL(
 
 
     /*
-       Atualizar endereço sem recarregar
-       a página.
+       Alterar a URL sem recarregar.
     */
 
     window.history.replaceState(
         {},
         "",
         url
+    );
+
+
+    console.log(
+        "[KYNENCE] URL atualizada:",
+        url.href
     );
 
 }
@@ -265,6 +327,10 @@ function executarPesquisa(
 
         mostrarMensagemInicial();
 
+        atualizarInformacaoResultados(
+            null
+        );
+
         return;
 
     }
@@ -282,13 +348,17 @@ function executarPesquisa(
             : [];
 
 
-    /*
-       Pesquisar somente
-       artigos publicados.
-    */
+    /* =====================================================
+       CALCULAR RESULTADOS
+    ===================================================== */
 
     const resultados =
         artigos
+
+            /*
+               Somente artigos publicados.
+            */
+
             .filter(
                 function (artigo) {
 
@@ -299,12 +369,18 @@ function executarPesquisa(
 
                 }
             )
+
+            /*
+               Calcular relevância.
+            */
+
             .map(
                 function (artigo) {
 
                     return {
 
-                        artigo: artigo,
+                        artigo:
+                            artigo,
 
                         pontuacao:
                             calcularPontuacao(
@@ -316,6 +392,12 @@ function executarPesquisa(
 
                 }
             )
+
+            /*
+               Remover artigos sem
+               correspondência.
+            */
+
             .filter(
                 function (resultado) {
 
@@ -327,15 +409,17 @@ function executarPesquisa(
             );
 
 
-    /*
-       Ordenar pela relevância.
-
-       Em caso de empate,
-       usar a data.
-    */
+    /* =====================================================
+       ORDENAR RESULTADOS
+    ===================================================== */
 
     resultados.sort(
         function (a, b) {
+
+            /*
+               Primeiro:
+               maior relevância.
+            */
 
             if (
                 b.pontuacao !==
@@ -350,6 +434,11 @@ function executarPesquisa(
             }
 
 
+            /*
+               Em caso de empate:
+               artigo mais recente.
+            */
+
             return (
                 obterDataNumerica(
                     b.artigo
@@ -363,18 +452,30 @@ function executarPesquisa(
     );
 
 
-    /*
-       Atualizar informação.
-    */
+    console.log(
+        "[KYNENCE] Pesquisa:",
+        consulta
+    );
+
+
+    console.log(
+        "[KYNENCE] Resultados:",
+        resultados.length
+    );
+
+
+    /* =====================================================
+       ATUALIZAR INFORMAÇÃO
+    ===================================================== */
 
     atualizarInformacaoResultados(
         resultados.length
     );
 
 
-    /*
-       Nenhum resultado.
-    */
+    /* =====================================================
+       NENHUM RESULTADO
+    ===================================================== */
 
     if (
         resultados.length === 0
@@ -389,9 +490,9 @@ function executarPesquisa(
     }
 
 
-    /*
-       Criar cartões.
-    */
+    /* =====================================================
+       CRIAR CARTÕES
+    ===================================================== */
 
     resultados.forEach(
         function (resultado) {
@@ -400,6 +501,7 @@ function executarPesquisa(
                 criarCartaoResultado(
                     resultado.artigo
                 );
+
 
             searchResults.appendChild(
                 card
@@ -423,38 +525,32 @@ function calcularPontuacao(
     let pontuacao = 0;
 
 
-    /*
-       Texto individual dos campos.
-    */
+    /* =====================================================
+       CAMPOS
+    ===================================================== */
 
     const titulo =
         normalizarTexto(
             artigo.titulo
         );
 
+
     const resumo =
         normalizarTexto(
             artigo.resumo
         );
+
 
     const categoria =
         normalizarTexto(
             artigo.categoria
         );
 
+
     const categoriaSlug =
         normalizarTexto(
             artigo.categoriaSlug
         );
-
-    const tags =
-        Array.isArray(
-            artigo.tags
-        )
-            ? artigo.tags.map(
-                  normalizarTexto
-              )
-            : [];
 
 
     const seoTitulo =
@@ -462,16 +558,36 @@ function calcularPontuacao(
             artigo.seoTitulo
         );
 
+
     const seoDescricao =
         normalizarTexto(
             artigo.seoDescricao
         );
 
 
-    /*
-       Título:
-       maior peso.
-    */
+    /* =====================================================
+       TAGS
+    ===================================================== */
+
+    const tags =
+        Array.isArray(
+            artigo.tags
+        )
+            ? artigo.tags.map(
+                  function (tag) {
+
+                      return normalizarTexto(
+                          tag
+                      );
+
+                  }
+              )
+            : [];
+
+
+    /* =====================================================
+       TÍTULO
+    ===================================================== */
 
     if (
         titulo.includes(termo)
@@ -483,8 +599,7 @@ function calcularPontuacao(
 
 
     /*
-       Correspondência exata
-       no início do título.
+       Começo do título.
     */
 
     if (
@@ -497,8 +612,21 @@ function calcularPontuacao(
 
 
     /*
-       Resumo.
+       Correspondência exata.
     */
+
+    if (
+        titulo === termo
+    ) {
+
+        pontuacao += 5;
+
+    }
+
+
+    /* =====================================================
+       RESUMO
+    ===================================================== */
 
     if (
         resumo.includes(termo)
@@ -509,9 +637,9 @@ function calcularPontuacao(
     }
 
 
-    /*
-       Categoria.
-    */
+    /* =====================================================
+       CATEGORIA
+    ===================================================== */
 
     if (
         categoria.includes(termo)
@@ -522,9 +650,9 @@ function calcularPontuacao(
     }
 
 
-    /*
-       Slug da categoria.
-    */
+    /* =====================================================
+       SLUG DA CATEGORIA
+    ===================================================== */
 
     if (
         categoriaSlug.includes(termo)
@@ -535,9 +663,9 @@ function calcularPontuacao(
     }
 
 
-    /*
-       Tags.
-    */
+    /* =====================================================
+       TAGS
+    ===================================================== */
 
     tags.forEach(
         function (tag) {
@@ -554,9 +682,9 @@ function calcularPontuacao(
     );
 
 
-    /*
-       SEO.
-    */
+    /* =====================================================
+       SEO TITLE
+    ===================================================== */
 
     if (
         seoTitulo.includes(termo)
@@ -566,6 +694,10 @@ function calcularPontuacao(
 
     }
 
+
+    /* =====================================================
+       SEO DESCRIPTION
+    ===================================================== */
 
     if (
         seoDescricao.includes(termo)
@@ -631,21 +763,24 @@ function criarCartaoResultado(
             "article"
         );
 
+
     card.className =
         "article-card";
 
 
-    /*
-       Categoria.
-    */
+    /* =====================================================
+       CATEGORIA
+    ===================================================== */
 
     const categoria =
         document.createElement(
             "span"
         );
 
+
     categoria.className =
         "article-category";
+
 
     categoria.textContent =
         (
@@ -654,42 +789,45 @@ function criarCartaoResultado(
         ).toUpperCase();
 
 
-    /*
-       Título.
-    */
+    /* =====================================================
+       TÍTULO
+    ===================================================== */
 
     const titulo =
         document.createElement(
             "h3"
         );
 
+
     titulo.textContent =
         artigo.titulo ||
         "Artigo sem título";
 
 
-    /*
-       Resumo.
-    */
+    /* =====================================================
+       RESUMO
+    ===================================================== */
 
     const resumo =
         document.createElement(
             "p"
         );
 
+
     resumo.textContent =
         artigo.resumo ||
         "";
 
 
-    /*
-       Metadados.
-    */
+    /* =====================================================
+       METADADOS
+    ===================================================== */
 
     const meta =
         document.createElement(
             "div"
         );
+
 
     meta.className =
         "article-card-meta";
@@ -698,6 +836,7 @@ function criarCartaoResultado(
     const data =
         artigo.data ||
         "";
+
 
     const leitura =
         artigo.leitura ||
@@ -721,46 +860,68 @@ function criarCartaoResultado(
     }
 
 
-    /*
-       Link.
-    */
+    /* =====================================================
+       LINK DO ARTIGO
+    ===================================================== */
 
     const link =
         document.createElement(
             "a"
         );
 
+
     link.className =
         "article-link";
+
 
     link.href =
         construirUrlArtigoPesquisa(
             artigo
         );
 
+
     link.textContent =
         "Ler artigo →";
 
 
-    /*
-       Montar cartão.
-    */
+    link.setAttribute(
+        "aria-label",
+        `Ler artigo: ${
+            artigo.titulo ||
+            "Artigo"
+        }`
+    );
+
+
+    console.log(
+        "[KYNENCE] Link de pesquisa:",
+        link.href
+    );
+
+
+    /* =====================================================
+       MONTAR CARTÃO
+    ===================================================== */
 
     card.appendChild(
         categoria
     );
 
+
     card.appendChild(
         titulo
     );
+
 
     card.appendChild(
         resumo
     );
 
+
     card.appendChild(
         meta
     );
+
 
     card.appendChild(
         link
@@ -776,12 +937,33 @@ function criarCartaoResultado(
    9. CONSTRUIR URL DO ARTIGO
 ========================================================= */
 
+/*
+   IMPORTANTE:
+
+   A arquitetura atual NÃO possui:
+
+   /artigos/
+
+   O sistema utiliza:
+
+   /artigo.html?id=inflacao
+
+   Portanto, esta função nunca deve gerar:
+
+   artigos/inflacao.html
+
+   nem:
+
+   artigos/o-que-e-inflacao.html
+*/
+
 function construirUrlArtigoPesquisa(
     artigo
 ) {
 
     if (
-        !artigo
+        !artigo ||
+        !artigo.id
     ) {
 
         return "#";
@@ -789,77 +971,24 @@ function construirUrlArtigoPesquisa(
     }
 
 
-    let caminho =
-        artigo.url || "";
-
-
-    /*
-       Fallback caso o artigo
-       não possua URL.
-    */
-
-    if (!caminho) {
-
-        const slug =
-            artigo.slug ||
-            artigo.id ||
-            "";
-
-        caminho =
-            `artigos/${slug}.html`;
-
-    }
-
-
-    /*
-       Remover ./ e /
-       do início.
-    */
-
-    caminho =
-        caminho
-            .replace(
-                /^\.\/+/,
-                ""
+    const id =
+        encodeURIComponent(
+            String(
+                artigo.id
             )
-            .replace(
-                /^\/+/,
-                ""
-            );
+        );
 
 
     /*
-       Garantir pasta artigos.
+       pesquisa.html está na raiz.
+
+       artigo.html também está na raiz.
+
+       Portanto:
     */
-
-    if (
-        !caminho.startsWith(
-            "artigos/"
-        )
-    ) {
-
-        caminho =
-            `artigos/${caminho}`;
-
-    }
-
-
-    /*
-       Criar URL.
-    */
-
-    const separador =
-        caminho.includes("?")
-            ? "&"
-            : "?";
-
 
     return (
-        `${caminho}` +
-        `${separador}id=` +
-        encodeURIComponent(
-            artigo.id || ""
-        )
+        `artigo.html?id=${id}`
     );
 
 }
@@ -890,7 +1019,7 @@ function normalizarTexto(
 
 
 /* =========================================================
-   11. ATUALIZAR INFORMAÇÃO
+   11. ATUALIZAR INFORMAÇÃO DOS RESULTADOS
 ========================================================= */
 
 function atualizarInformacaoResultados(
@@ -904,6 +1033,26 @@ function atualizarInformacaoResultados(
     }
 
 
+    /*
+       Estado inicial.
+    */
+
+    if (
+        quantidade === null
+    ) {
+
+        searchInfo.textContent =
+            "Pesquise por um tema para começar.";
+
+        return;
+
+    }
+
+
+    /*
+       Nenhum.
+    */
+
     if (
         quantidade === 0
     ) {
@@ -916,6 +1065,10 @@ function atualizarInformacaoResultados(
     }
 
 
+    /*
+       Um.
+    */
+
     if (
         quantidade === 1
     ) {
@@ -927,6 +1080,10 @@ function atualizarInformacaoResultados(
 
     }
 
+
+    /*
+       Vários.
+    */
 
     searchInfo.textContent =
         `${quantidade} artigos encontrados.`;
@@ -982,6 +1139,7 @@ function mostrarNenhumResultado(
             "div"
         );
 
+
     estado.className =
         "empty-state";
 
@@ -990,6 +1148,7 @@ function mostrarNenhumResultado(
         document.createElement(
             "h3"
         );
+
 
     titulo.textContent =
         "Nenhum artigo encontrado.";
@@ -1000,6 +1159,7 @@ function mostrarNenhumResultado(
             "p"
         );
 
+
     descricao.textContent =
         `Não encontramos artigos para "${consulta}".`;
 
@@ -1009,6 +1169,7 @@ function mostrarNenhumResultado(
             "p"
         );
 
+
     sugestao.textContent =
         "Tente usar outra palavra ou pesquisar por um tema diferente.";
 
@@ -1017,9 +1178,11 @@ function mostrarNenhumResultado(
         titulo
     );
 
+
     estado.appendChild(
         descricao
     );
+
 
     estado.appendChild(
         sugestao
@@ -1040,6 +1203,12 @@ function mostrarNenhumResultado(
 function mostrarErroPesquisa(
     mensagem
 ) {
+
+    console.error(
+        "[KYNENCE] Erro de pesquisa:",
+        mensagem
+    );
+
 
     if (searchInfo) {
 
@@ -1065,6 +1234,7 @@ function mostrarErroPesquisa(
             "div"
         );
 
+
     estado.className =
         "empty-state";
 
@@ -1073,6 +1243,7 @@ function mostrarErroPesquisa(
         document.createElement(
             "h3"
         );
+
 
     titulo.textContent =
         "Não foi possível pesquisar.";
@@ -1083,6 +1254,7 @@ function mostrarErroPesquisa(
             "p"
         );
 
+
     descricao.textContent =
         mensagem;
 
@@ -1090,6 +1262,7 @@ function mostrarErroPesquisa(
     estado.appendChild(
         titulo
     );
+
 
     estado.appendChild(
         descricao
@@ -1104,5 +1277,29 @@ function mostrarErroPesquisa(
 
 
 /* =========================================================
-   FIM DO SISTEMA DE PESQUISA V2.0
+   15. EXPORTAÇÕES
+========================================================= */
+
+window.iniciarPesquisa =
+    iniciarPesquisa;
+
+
+window.executarPesquisa =
+    executarPesquisa;
+
+
+window.normalizarTexto =
+    normalizarTexto;
+
+
+window.construirUrlArtigoPesquisa =
+    construirUrlArtigoPesquisa;
+
+
+window.calcularPontuacao =
+    calcularPontuacao;
+
+
+/* =========================================================
+   FIM DO SISTEMA DE PESQUISA V2.1
 ========================================================= */

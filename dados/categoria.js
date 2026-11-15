@@ -1,24 +1,13 @@
 /* =========================================================
    KYNENCE LAB
    SISTEMA DE CATEGORIAS
-   V2.0
+   V2.2 — Navegação robusta para artigos
 
-   Responsabilidades:
+   Estrutura:
 
-   - Ler a categoria da URL
-   - Encontrar a categoria correta
-   - Atualizar título e descrição
-   - Buscar somente artigos publicados
-   - Filtrar pela categoria
-   - Ordenar artigos
-   - Criar cartões
-   - Criar links corretos
-   - Mostrar estado vazio
-   - Mostrar erros de forma segura
-
-   Exemplo:
-
-   categorias/categoria.html?categoria=economia
+   /index.html
+   /artigo.html?id=inflacao
+   /categorias/categoria.html?categoria=economia
 
    ========================================================= */
 
@@ -28,9 +17,7 @@
 ========================================================= */
 
 const parametrosCategoria =
-    new URLSearchParams(
-        window.location.search
-    );
+    new URLSearchParams(window.location.search);
 
 const categoriaSlug =
     (
@@ -45,50 +32,24 @@ const categoriaSlug =
 ========================================================= */
 
 const categoryTitle =
-    document.getElementById(
-        "categoryTitle"
-    );
+    document.getElementById("categoryTitle");
 
 const categoryLabel =
-    document.getElementById(
-        "categoryLabel"
-    );
+    document.getElementById("categoryLabel");
 
 const categoryDescription =
-    document.getElementById(
-        "categoryDescription"
-    );
+    document.getElementById("categoryDescription");
 
 const categoryArticles =
-    document.getElementById(
-        "categoryArticles"
-    );
+    document.getElementById("categoryArticles");
 
 const categoryMetaDescription =
-    document.getElementById(
-        "categoryMetaDescription"
-    );
+    document.getElementById("categoryMetaDescription");
 
 
 /* =========================================================
    3. OBTER CATÁLOGO DE CATEGORIAS
 ========================================================= */
-
-/*
-   Compatibilidade com diferentes versões
-   do categorias.js.
-
-   Primeiro tenta:
-
-   window.KYNENCE_CATEGORIAS
-
-   Depois tenta:
-
-   window.categorias
-
-   E por último verifica se existe
-   uma variável global chamada categorias.
-*/
 
 function obterCategorias() {
 
@@ -114,23 +75,13 @@ function obterCategorias() {
     }
 
 
-    if (
-        typeof categorias !== "undefined" &&
-        Array.isArray(categorias)
-    ) {
-
-        return categorias;
-
-    }
-
-
     return [];
 
 }
 
 
 /* =========================================================
-   4. VERIFICAR CATÁLOGO DE ARTIGOS
+   4. OBTER CATÁLOGO DE ARTIGOS
 ========================================================= */
 
 function obterArtigos() {
@@ -152,33 +103,30 @@ function obterArtigos() {
 
 
 /* =========================================================
-   5. ESCAPAR TEXTO
+   5. CONSTRUIR URL DO ARTIGO
 ========================================================= */
 
-function escaparTexto(texto) {
+/*
+   IMPORTANTE:
 
-    const elemento =
-        document.createElement(
-            "div"
-        );
+   categoria.html está dentro de:
 
-    elemento.textContent =
-        texto == null
-            ? ""
-            : String(texto);
+   /categorias/
 
-    return elemento.innerHTML;
+   enquanto artigo.html está na raiz:
 
-}
+   /artigo.html
 
+   Portanto:
 
-/* =========================================================
-   6. CRIAR URL DO ARTIGO
-========================================================= */
+   categorias/categoria.html
+          ↓
+       ../artigo.html
+          ↓
+   artigo.html?id=inflacao
+*/
 
-function construirUrlArtigoCategoria(
-    artigo
-) {
+function construirUrlArtigoCategoria(artigo) {
 
     if (
         !artigo ||
@@ -190,101 +138,55 @@ function construirUrlArtigoCategoria(
     }
 
 
-    /*
-       O catálogo normalmente possui:
-
-       url:
-       artigos/o-que-e-inflacao.html
-
-       Como estamos dentro de:
-
-       /categorias/
-
-       precisamos subir uma pasta:
-
-       ../artigos/o-que-e-inflacao.html
-    */
-
-    let caminho =
-        artigo.url || "";
-
-
-    /*
-       Se não houver URL no catálogo,
-       usar o slug como fallback.
-    */
-
-    if (!caminho) {
-
-        const slug =
-            artigo.slug ||
-            artigo.id;
-
-        caminho =
-            `artigos/${slug}.html`;
-
-    }
-
-
-    /*
-       Remover ./ caso exista.
-    */
-
-    caminho =
-        caminho.replace(
-            /^\.\/+/,
-            ""
+    const id =
+        encodeURIComponent(
+            String(artigo.id)
         );
 
 
-    /*
-       Se o catálogo possuir:
+    return `../artigo.html?id=${id}`;
 
-       /artigos/arquivo.html
+}
 
-       remover a barra inicial.
-    */
 
-    caminho =
-        caminho.replace(
-            /^\/+/,
-            ""
+/* =========================================================
+   6. NAVEGAR PARA O ARTIGO
+========================================================= */
+
+function abrirArtigoDaCategoria(artigo) {
+
+    const url =
+        construirUrlArtigoCategoria(
+            artigo
         );
 
-
-    /*
-       Garantir que o caminho
-       aponta para a pasta artigos.
-    */
 
     if (
-        !caminho.startsWith(
-            "artigos/"
-        )
+        !url ||
+        url === "#"
     ) {
 
-        caminho =
-            `artigos/${caminho}`;
+        console.warn(
+            "[KYNENCE] Não foi possível construir o link do artigo."
+        );
+
+        return;
 
     }
 
 
+    console.log(
+        "[KYNENCE] Abrindo artigo:",
+        url
+    );
+
+
     /*
-       Página atual:
-
-       /categorias/categoria.html
-
-       Portanto:
-
-       ../artigos/arquivo.html
+       Navegação normal.
     */
 
-    return (
-        `../${caminho}` +
-        `?id=${encodeURIComponent(
-            artigo.id
-        )}`
-    );
+    window.location.href =
+        url;
 
 }
 
@@ -306,39 +208,29 @@ function mostrarEstadoVazio() {
 
 
     const estado =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     estado.className =
         "empty-state";
 
 
     const titulo =
-        document.createElement(
-            "h3"
-        );
+        document.createElement("h3");
 
     titulo.textContent =
         "Ainda não existem artigos nesta categoria.";
 
 
     const descricao =
-        document.createElement(
-            "p"
-        );
+        document.createElement("p");
 
     descricao.textContent =
         "A KYNENCE LAB está preparando novos conteúdos.";
 
 
-    estado.appendChild(
-        titulo
-    );
+    estado.appendChild(titulo);
 
-    estado.appendChild(
-        descricao
-    );
+    estado.appendChild(descricao);
 
 
     categoryArticles.appendChild(
@@ -352,27 +244,21 @@ function mostrarEstadoVazio() {
    8. CRIAR CARTÃO DE ARTIGO
 ========================================================= */
 
-function criarCartaoArtigo(
-    artigo
-) {
+function criarCartaoArtigo(artigo) {
 
     const card =
-        document.createElement(
-            "article"
-        );
+        document.createElement("article");
 
     card.className =
         "article-card";
 
 
-    /* -----------------------------------------------
-       Categoria
-    ------------------------------------------------ */
+    /* =====================================================
+       CATEGORIA
+    ===================================================== */
 
     const categoria =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
     categoria.className =
         "article-category";
@@ -384,42 +270,36 @@ function criarCartaoArtigo(
         ).toUpperCase();
 
 
-    /* -----------------------------------------------
-       Título
-    ------------------------------------------------ */
+    /* =====================================================
+       TÍTULO
+    ===================================================== */
 
     const titulo =
-        document.createElement(
-            "h3"
-        );
+        document.createElement("h3");
 
     titulo.textContent =
         artigo.titulo ||
         "Artigo sem título";
 
 
-    /* -----------------------------------------------
-       Resumo
-    ------------------------------------------------ */
+    /* =====================================================
+       RESUMO
+    ===================================================== */
 
     const resumo =
-        document.createElement(
-            "p"
-        );
+        document.createElement("p");
 
     resumo.textContent =
         artigo.resumo ||
         "";
 
 
-    /* -----------------------------------------------
-       Metadados
-    ------------------------------------------------ */
+    /* =====================================================
+       METADADOS
+    ===================================================== */
 
     const meta =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     meta.className =
         "article-card-meta";
@@ -452,30 +332,72 @@ function criarCartaoArtigo(
     }
 
 
-    /* -----------------------------------------------
-       Link
-    ------------------------------------------------ */
+    /* =====================================================
+       LINK DO ARTIGO
+    ===================================================== */
 
     const link =
-        document.createElement(
-            "a"
-        );
+        document.createElement("a");
 
     link.className =
         "article-link";
 
-    link.href =
+
+    const urlArtigo =
         construirUrlArtigoCategoria(
             artigo
         );
+
+
+    link.href =
+        urlArtigo;
+
 
     link.textContent =
         "Ler artigo →";
 
 
-    /* -----------------------------------------------
-       Montar cartão
-    ------------------------------------------------ */
+    /*
+       Acessibilidade.
+    */
+
+    link.setAttribute(
+        "aria-label",
+        `Ler artigo: ${artigo.titulo || "Artigo"}`
+    );
+
+
+    /*
+       Fallback de navegação.
+
+       Se algum comportamento externo impedir
+       a navegação normal do link, usamos
+       window.location.href.
+    */
+
+    link.addEventListener(
+        "click",
+        function (evento) {
+
+            /*
+               Não impedir o comportamento normal
+               do navegador.
+
+               Apenas registamos a navegação.
+            */
+
+            console.log(
+                "[KYNENCE] Clique no artigo:",
+                urlArtigo
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       MONTAR CARTÃO
+    ===================================================== */
 
     card.appendChild(
         categoria
@@ -511,6 +433,10 @@ function carregarArtigosDaCategoria() {
 
     if (!categoryArticles) {
 
+        console.warn(
+            "[KYNENCE] #categoryArticles não encontrado."
+        );
+
         return;
 
     }
@@ -520,13 +446,15 @@ function carregarArtigosDaCategoria() {
         obterArtigos();
 
 
-    /*
-       Filtrar:
+    console.log(
+        "[KYNENCE] Total de artigos:",
+        artigos.length
+    );
 
-       - artigo válido
-       - publicado
-       - categoria correta
-    */
+
+    /* =====================================================
+       FILTRAR ARTIGOS
+    ===================================================== */
 
     const artigosDaCategoria =
         artigos.filter(
@@ -539,6 +467,10 @@ function carregarArtigosDaCategoria() {
                 }
 
 
+                /*
+                   Somente artigos publicados.
+                */
+
                 if (
                     artigo.publicado !== true
                 ) {
@@ -547,6 +479,10 @@ function carregarArtigosDaCategoria() {
 
                 }
 
+
+                /*
+                   Categoria correspondente.
+                */
 
                 return (
                     String(
@@ -561,11 +497,9 @@ function carregarArtigosDaCategoria() {
         );
 
 
-    /*
-       Ordenar:
-
-       mais recente → mais antigo
-    */
+    /* =====================================================
+       ORDENAR
+    ===================================================== */
 
     artigosDaCategoria.sort(
         function (a, b) {
@@ -575,30 +509,36 @@ function carregarArtigosDaCategoria() {
                     ? new Date(a.dataISO)
                     : new Date(0);
 
+
             const dataB =
                 b.dataISO
                     ? new Date(b.dataISO)
                     : new Date(0);
 
-            return (
-                dataB - dataA
-            );
+
+            return dataB - dataA;
 
         }
     );
 
 
-    /*
-       Limpar resultados.
-    */
+    console.log(
+        "[KYNENCE] Artigos encontrados na categoria:",
+        artigosDaCategoria.length
+    );
+
+
+    /* =====================================================
+       LIMPAR
+    ===================================================== */
 
     categoryArticles.innerHTML =
         "";
 
 
-    /*
-       Nenhum resultado.
-    */
+    /* =====================================================
+       ESTADO VAZIO
+    ===================================================== */
 
     if (
         artigosDaCategoria.length === 0
@@ -611,9 +551,9 @@ function carregarArtigosDaCategoria() {
     }
 
 
-    /*
-       Criar cartões.
-    */
+    /* =====================================================
+       CRIAR CARTÕES
+    ===================================================== */
 
     artigosDaCategoria.forEach(
         function (artigo) {
@@ -622,6 +562,7 @@ function carregarArtigosDaCategoria() {
                 criarCartaoArtigo(
                     artigo
                 );
+
 
             categoryArticles.appendChild(
                 card
@@ -634,164 +575,16 @@ function carregarArtigosDaCategoria() {
 
 
 /* =========================================================
-   10. INICIAR CATEGORIA
+   10. MOSTRAR ERRO
 ========================================================= */
 
-function iniciarCategoria() {
+function mostrarErro(mensagem) {
 
-    const categorias =
-        obterCategorias();
+    console.error(
+        "[KYNENCE] Erro:",
+        mensagem
+    );
 
-
-    /*
-       Verificar catálogo.
-    */
-
-    if (
-        categorias.length === 0
-    ) {
-
-        mostrarErro(
-            "O catálogo de categorias não foi carregado."
-        );
-
-        return;
-
-    }
-
-
-    /*
-       Verificar se existe slug.
-    */
-
-    if (!categoriaSlug) {
-
-        mostrarErro(
-            "Nenhuma categoria foi selecionada."
-        );
-
-        return;
-
-    }
-
-
-    /*
-       Procurar categoria.
-    */
-
-    const categoriaAtual =
-        categorias.find(
-            function (categoria) {
-
-                return (
-                    categoria &&
-                    String(
-                        categoria.slug || ""
-                    )
-                    .trim()
-                    .toLowerCase() ===
-                    categoriaSlug
-                );
-
-            }
-        );
-
-
-    /*
-       Categoria inexistente.
-    */
-
-    if (!categoriaAtual) {
-
-        mostrarErro(
-            "A categoria que você procura não existe."
-        );
-
-        return;
-
-    }
-
-
-    /*
-       Título da página.
-    */
-
-    document.title =
-        `${categoriaAtual.nome} — KYNENCE LAB`;
-
-
-    /*
-       Etiqueta.
-    */
-
-    if (categoryLabel) {
-
-        categoryLabel.textContent =
-            String(
-                categoriaAtual.nome ||
-                "CATEGORIA"
-            ).toUpperCase();
-
-    }
-
-
-    /*
-       Título.
-    */
-
-    if (categoryTitle) {
-
-        categoryTitle.textContent =
-            categoriaAtual.nome ||
-            "Artigos";
-
-    }
-
-
-    /*
-       Descrição.
-    */
-
-    if (categoryDescription) {
-
-        categoryDescription.textContent =
-            categoriaAtual.descricao ||
-            "Explore os conteúdos desta categoria.";
-
-    }
-
-
-    /*
-       SEO.
-    */
-
-    if (
-        categoryMetaDescription
-    ) {
-
-        categoryMetaDescription.content =
-            categoriaAtual.descricao ||
-            `Explore os artigos de ${categoriaAtual.nome} no KYNENCE LAB.`;
-
-    }
-
-
-    /*
-       Carregar artigos.
-    */
-
-    carregarArtigosDaCategoria();
-
-}
-
-
-/* =========================================================
-   11. MOSTRAR ERRO
-========================================================= */
-
-function mostrarErro(
-    mensagem
-) {
 
     if (categoryLabel) {
 
@@ -832,36 +625,28 @@ function mostrarErro(
 
 
         const estado =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         estado.className =
             "empty-state";
 
 
         const titulo =
-            document.createElement(
-                "h3"
-            );
+            document.createElement("h3");
 
         titulo.textContent =
             "Ops!";
 
 
         const descricao =
-            document.createElement(
-                "p"
-            );
+            document.createElement("p");
 
         descricao.textContent =
             mensagem;
 
 
         const link =
-            document.createElement(
-                "a"
-            );
+            document.createElement("a");
 
         link.href =
             "../index.html";
@@ -896,20 +681,285 @@ function mostrarErro(
 
 
 /* =========================================================
-   12. INICIALIZAÇÃO
+   11. INICIAR CATEGORIA
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+function iniciarCategoria() {
 
-        iniciarCategoria();
+    console.log(
+        "[KYNENCE] Inicializando categoria..."
+    );
+
+
+    /* =====================================================
+       ELEMENTO PRINCIPAL
+    ===================================================== */
+
+    if (!categoryArticles) {
+
+        console.error(
+            "[KYNENCE] Elemento #categoryArticles não encontrado."
+        );
+
+        return;
 
     }
-);
+
+
+    /* =====================================================
+       CATEGORIAS
+    ===================================================== */
+
+    const categorias =
+        obterCategorias();
+
+
+    console.log(
+        "[KYNENCE] Total de categorias:",
+        categorias.length
+    );
+
+
+    if (
+        categorias.length === 0
+    ) {
+
+        mostrarErro(
+            "O catálogo de categorias não foi carregado."
+        );
+
+        return;
+
+    }
+
+
+    /* =====================================================
+       ARTIGOS
+    ===================================================== */
+
+    const artigos =
+        obterArtigos();
+
+
+    console.log(
+        "[KYNENCE] Total de artigos disponíveis:",
+        artigos.length
+    );
+
+
+    /* =====================================================
+       SLUG
+    ===================================================== */
+
+    if (!categoriaSlug) {
+
+        mostrarErro(
+            "Nenhuma categoria foi selecionada."
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "[KYNENCE] Categoria solicitada:",
+        categoriaSlug
+    );
+
+
+    /* =====================================================
+       ENCONTRAR CATEGORIA
+    ===================================================== */
+
+    const categoriaAtual =
+        categorias.find(
+            function (categoria) {
+
+                return (
+                    categoria &&
+                    String(
+                        categoria.slug || ""
+                    )
+                    .trim()
+                    .toLowerCase() ===
+                    categoriaSlug
+                );
+
+            }
+        );
+
+
+    if (!categoriaAtual) {
+
+        mostrarErro(
+            "A categoria que você procura não existe."
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "[KYNENCE] Categoria encontrada:",
+        categoriaAtual
+    );
+
+
+    /* =====================================================
+       TÍTULO DO DOCUMENTO
+    ===================================================== */
+
+    document.title =
+        `${categoriaAtual.nome} — KYNENCE LAB`;
+
+
+    /* =====================================================
+       LABEL
+    ===================================================== */
+
+    if (categoryLabel) {
+
+        categoryLabel.textContent =
+            String(
+                categoriaAtual.nome ||
+                "CATEGORIA"
+            ).toUpperCase();
+
+    }
+
+
+    /* =====================================================
+       TÍTULO
+    ===================================================== */
+
+    if (categoryTitle) {
+
+        categoryTitle.textContent =
+            categoriaAtual.nome ||
+            "Artigos";
+
+    }
+
+
+    /* =====================================================
+       DESCRIÇÃO
+    ===================================================== */
+
+    if (categoryDescription) {
+
+        categoryDescription.textContent =
+            categoriaAtual.descricao ||
+            "Explore os conteúdos desta categoria.";
+
+    }
+
+
+    /* =====================================================
+       META DESCRIPTION
+    ===================================================== */
+
+    if (
+        categoryMetaDescription
+    ) {
+
+        categoryMetaDescription.content =
+            categoriaAtual.descricao ||
+            `Explore os artigos de ${categoriaAtual.nome} no KYNENCE LAB.`;
+
+    }
+
+
+    /* =====================================================
+       CARREGAR ARTIGOS
+    ===================================================== */
+
+    carregarArtigosDaCategoria();
+
+
+    console.log(
+        "[KYNENCE] Categoria inicializada com sucesso."
+    );
+
+}
 
 
 /* =========================================================
-   FIM DO SISTEMA
+   12. INICIALIZAÇÃO ROBUSTA
 ========================================================= */
 
+function inicializarPaginaCategoria() {
+
+    if (
+        window.__KYNENCE_CATEGORIA_INICIALIZADA
+    ) {
+
+        return;
+
+    }
+
+
+    window.__KYNENCE_CATEGORIA_INICIALIZADA =
+        true;
+
+
+    iniciarCategoria();
+
+}
+
+
+/* =========================================================
+   13. DOM READY
+========================================================= */
+
+if (
+    document.readyState === "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        inicializarPaginaCategoria,
+        {
+            once: true
+        }
+    );
+
+} else {
+
+    inicializarPaginaCategoria();
+
+}
+
+
+/* =========================================================
+   14. EXPORTAÇÕES
+========================================================= */
+
+window.obterCategorias =
+    obterCategorias;
+
+
+window.obterArtigosCategoria =
+    obterArtigos;
+
+
+window.carregarArtigosDaCategoria =
+    carregarArtigosDaCategoria;
+
+
+window.iniciarCategoria =
+    iniciarCategoria;
+
+
+window.construirUrlArtigoCategoria =
+    construirUrlArtigoCategoria;
+
+
+window.abrirArtigoDaCategoria =
+    abrirArtigoDaCategoria;
+
+
+/* =========================================================
+   FIM — SISTEMA DE CATEGORIAS V2.2
+========================================================= */
