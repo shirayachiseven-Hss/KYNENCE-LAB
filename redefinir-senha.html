@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir senha | KYNENCE LAB</title>
+</head>
+<body>
+
+    <h1>Nova palavra-passe</h1>
+
+    <form id="reset-form">
+        <input type="password" id="password"
+            placeholder="Nova palavra-passe" required minlength="8">
+
+        <button type="submit">Guardar palavra-passe</button>
+        <p id="message"></p>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="dados/supabase.js"></script>
+
+    <script>
+        const form = document.getElementById("reset-form");
+        const message = document.getElementById("message");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const password = document.getElementById("password").value;
+
+            const { error } = await kynenceSupabase.auth.updateUser({
+                password: password
+            });
+
+            if (error) {
+                message.textContent = error.message;
+                return;
+            }
+
+            message.textContent = "Palavra-passe atualizada com sucesso!";
+        });
+    </script>
+
+</body>
+</html>
